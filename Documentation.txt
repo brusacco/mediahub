@@ -1,0 +1,2 @@
+Instalar Ruby 3.3.0 en RVM
+https://github.com/rvm/rvm/issues/5404#issuecomment-1806701326
