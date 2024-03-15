@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-class Video < ApplicationRecord
-  belongs_to :station
+class Station < ApplicationRecord
+  has_many :videos
 
   def self.ransackable_attributes(_auth_object = nil)
-    %w[created_at id id_value location posted_at updated_at path]
+    %w[created_at directory id id_value name updated_at]
   end
 
   def self.ransackable_associations(_auth_object = nil)
-    ['station']
+    ['videos']
   end
 end

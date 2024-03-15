@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_03_15_194955) do
+ActiveRecord::Schema[7.1].define(version: 2024_03_15_213957) do
   create_table "active_admin_comments", force: :cascade do |t|
     t.string "namespace"
     t.text "body"
@@ -37,11 +37,22 @@ ActiveRecord::Schema[7.1].define(version: 2024_03_15_194955) do
     t.index ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
   end
 
+  create_table "stations", force: :cascade do |t|
+    t.string "name"
+    t.string "directory"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "videos", force: :cascade do |t|
     t.string "location"
     t.datetime "posted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "station_id", null: false
+    t.string "path"
+    t.index ["station_id"], name: "index_videos_on_station_id"
   end
 
+  add_foreign_key "videos", "stations"
 end

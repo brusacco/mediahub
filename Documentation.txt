@@ -7,3 +7,14 @@ Model: Video
 ------------------------------------------------------------------------------
 
 rails g model Video location:string posted_at:datetime
+rails generate active_admin:resource Video
+
+rails g migration AddStationToVideo station:references
+rails g migration AddPathToVideo path:string
+
+
+Model: Station
+------------------------------------------------------------------------------
+
+rails g model Station name:string directory:string
+rails generate active_admin:resource Station

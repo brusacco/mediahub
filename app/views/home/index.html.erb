@@ -1,3 +1,18 @@
 <h1 class="text-3xl font-bold underline">
     MediaHub
 </h1>
+<table>
+<% @videos.each do |video| %>
+  <tr>
+    <td>
+      <video width="320" height="240" controls>
+        <source src="videos/unicanal/<%= video.location %>" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </td>
+    <td>
+      <p>Timestamp: <%= video.posted_at %></p>
+    </td>
+  </tr>
+<% end %>
+</table>
