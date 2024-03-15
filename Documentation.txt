@@ -11,6 +11,8 @@ rails generate active_admin:resource Video
 
 rails g migration AddStationToVideo station:references
 rails g migration AddPathToVideo path:string
+rails g migration AddThumToVideo thumbnail:string
+rails g migration AddPublicToVideo public_path:string
 
 
 Model: Station
@@ -18,3 +20,6 @@ Model: Station
 
 rails g model Station name:string directory:string
 rails generate active_admin:resource Station
+
+
+ffmpeg -i https://tigocloudgen.desdeparaguay.net/unicanal/unicanal_baja/playlist.m3u8 -f segment -segment_list out.csv -segment_time 60 -reset_timestamps 1 -strftime 1 "unicanal/%Y-%m-%dT%H_%M_%S.mp4"
