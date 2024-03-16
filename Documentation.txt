@@ -3,6 +3,10 @@ https://github.com/rvm/rvm/issues/5404#issuecomment-1806701326
 
 
 ffmpeg -i https://tigocloudgen.desdeparaguay.net/unicanal/unicanal_baja/playlist.m3u8 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "unicanal/%Y-%m-%dT%H_%M_%S.mp4"
+whisper *.mp4 --language Spanish --output_format txt
+
+Running Whisper on CUDA/NVIDIA
+https://github.com/openai/whisper/discussions/1640
 
 
 Model: Video
