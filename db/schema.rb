@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_03_15_233627) do
+ActiveRecord::Schema[7.1].define(version: 2024_03_16_150421) do
   create_table "active_admin_comments", force: :cascade do |t|
     t.string "namespace"
     t.text "body"
@@ -81,6 +81,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_03_15_233627) do
     t.string "path"
     t.string "thumbnail"
     t.string "public_path"
+    t.text "transcription"
     t.index ["station_id"], name: "index_videos_on_station_id"
   end
 

@@ -2,6 +2,8 @@ Instalar Ruby 3.3.0 en RVM
 https://github.com/rvm/rvm/issues/5404#issuecomment-1806701326
 
 
+ffmpeg -i https://tigocloudgen.desdeparaguay.net/unicanal/unicanal_baja/playlist.m3u8 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "unicanal/%Y-%m-%dT%H_%M_%S.mp4"
+
 
 Model: Video
 ------------------------------------------------------------------------------
@@ -13,6 +15,7 @@ rails g migration AddStationToVideo station:references
 rails g migration AddPathToVideo path:string
 rails g migration AddThumToVideo thumbnail:string
 rails g migration AddPublicToVideo public_path:string
+rails g migration AddTranscriptionToVideo transcription:text
 
 
 Model: Station

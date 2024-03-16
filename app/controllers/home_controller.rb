@@ -3,6 +3,6 @@
 # Home controller
 class HomeController < ApplicationController
   def index
-    @videos = Video.order(posted_at: :desc).limit(5)
+    @videos = Video.where.not(transcription: nil).order(posted_at: :desc).limit(5)
   end
 end

@@ -4,11 +4,14 @@
 <table>
 <% @videos.each do |video| %>
   <tr>
-    <td>
+    <td width="320">
       <video width="320" height="240" controls>
         <source src="<%= video.public_path %>" type="video/mp4">
         Your browser does not support the video tag.
       </video>
+    </td>
+    <td>
+      <p><%= video.transcription %></p>
     </td>
     <td>
       <p>Timestamp: <%= video.posted_at %></p>
