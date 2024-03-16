@@ -8,7 +8,7 @@ task generate_transcription: :environment do
     puts "Transforming #{video.path} to #{output_file}"
 
     # Run Wisper command to generate transcription
-    command = "whisper #{video.path} --model base --language Spanish --output_format txt"
+    command = "whisper #{video.path} --language Spanish --output_format txt"
 
     _stdout, stderr, status = Open3.capture3(command)
 
