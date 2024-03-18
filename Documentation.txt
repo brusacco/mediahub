@@ -5,7 +5,9 @@ ActiveAdmin CSS issues
 https://github.com/activeadmin/activeadmin/issues/3819#issuecomment-351377822
 
 
-ffmpeg -i https://tigocloudgen.desdeparaguay.net/unicanal/unicanal_baja/playlist.m3u8 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "unicanal/%Y-%m-%dT%H_%M_%S.mp4"
+
+ffmpeg -i https://alba-py-c9n-c9n.stream.mediatiquestream.com/index.m3u8 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "c9n/temp/%Y-%m-%dT%H_%M_%S.mp4"
+ffmpeg -i https://tigocloudgen.desdeparaguay.net/unicanal/unicanal_baja/playlist.m3u8 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "unicanal/temp/%Y-%m-%dT%H_%M_%S.mp4"
 whisper *.mp4 --language Spanish --output_format txt
 
 Running Whisper on CUDA/NVIDIA

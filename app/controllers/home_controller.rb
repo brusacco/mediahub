@@ -5,7 +5,7 @@ require 'open3'
 # Home controller
 class HomeController < ApplicationController
   def index
-    @videos = Video.where.not(transcription: nil).order(posted_at: :desc).limit(5)
+    @videos = Video.where.not(transcription: nil).order(posted_at: :desc).limit(10)
   end
 
   def merge_videos
