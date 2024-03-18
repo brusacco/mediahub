@@ -1,6 +1,9 @@
 Instalar Ruby 3.3.0 en RVM
 https://github.com/rvm/rvm/issues/5404#issuecomment-1806701326
 
+ActiveAdmin CSS issues
+https://github.com/activeadmin/activeadmin/issues/3819#issuecomment-351377822
+
 
 ffmpeg -i https://tigocloudgen.desdeparaguay.net/unicanal/unicanal_baja/playlist.m3u8 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "unicanal/%Y-%m-%dT%H_%M_%S.mp4"
 whisper *.mp4 --language Spanish --output_format txt
