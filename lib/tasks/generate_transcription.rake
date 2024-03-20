@@ -2,13 +2,14 @@ require 'open3'
 
 desc 'Generate text transcription of video files'
 task generate_transcription: :environment do
-  Video.where(transcription: nil).order(posted_at: :desc).find_each do |video|
+  Video.order(posted_at: :desc).find_each do |video|
     output_file = video.location.gsub('.mp4', '.txt')
 
     puts "Transforming #{video.path} to #{output_file}"
 
     # Run Wisper command to generate transcription
-    command = "whisper #{video.path} --language Spanish --output_format txt"
+    #command = "whisper #{video.path} --language Spanish --output_format txt"
+    command = "whisper-ctranslate2 #{video.path} --language Spanish --output_format txt --compute_type int8 --vad_filter True"
 
     _stdout, stderr, status = Open3.capture3(command)
 

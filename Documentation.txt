@@ -13,6 +13,10 @@ whisper *.mp4 --language Spanish --output_format txt
 Running Whisper on CUDA/NVIDIA
 https://github.com/openai/whisper/discussions/1640
 
+Transcribir mas rapido: Probar!!!!!!
+https://github.com/Softcatala/whisper-ctranslate2?tab=readme-ov-file
+whisper-ctranslate2 2024-03-19T10_06_21.mp4 --language Spanish --output_format txt --compute_type int8 --threads 4
+
 
 Model: Video
 ------------------------------------------------------------------------------
