@@ -11,10 +11,17 @@ ffmpeg -i https://tigocloudgen.desdeparaguay.net/unicanal/unicanal_baja/playlist
 whisper *.mp4 --language Spanish --output_format txt
 
 
+ffmpeg -i https://zn1tf.desdeparaguay.net/npy/npy_py_baja/playlist.m3u8?k=5424a130fd83e690f4e38953fdf32ae7c8abaab438d583c6174c431f48489c88&exp=1722701298 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "npy/temp/%Y-%m-%dT%H_%M_%S.mp4"
+
+ffmpeg -i https://zn1tf.desdeparaguay.net/telefuturo/telefuturo_py_baja/playlist.m3u8?k=6c7e0190c9b2127ee96c6c01e2bb41fb47d26639a7c48f1b426e7dcdb67e457d&exp=1722750525  -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "telefuturo/temp/%Y-%m-%dT%H_%M_%S.mp4"
+
+ffmpeg -i https://zn1gen.desdeparaguay.net/unicanal/unicanal_alta/playlist.m3u8?k=6cb6382937a3b51ad591e0719c991b14c13e95434cb06044f1f7a95ff90c067e&exp=1722750838  -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "unicanal/temp/%Y-%m-%dT%H_%M_%S.mp4"
+
+ffmpeg -i 'https://abc-color.cdn.vustreams.com/live/d87c2b7b-9ecf-4e6e-b63b-b32772bd7851/live.isml/d87c2b7b-9ecf-4e6e-b63b-b32772bd7851.m3u8' -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "abc-tv/temp/%Y-%m-%dT%H_%M_%S.mp4"
+
 
 Secuencia para meter videos en la DB
-ffmpeg -i https://tigocloudgen.desdeparaguay.net/unicanal/unicanal_alta/playlist.m3u8 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "unicanal/temp/%Y-%m-%dT%H_%M_%S.mp4"
-rake import_videos 
+rake import_videos
 rake generate_transcription
 
 
@@ -25,6 +32,8 @@ https://github.com/openai/whisper/discussions/1640
 Transcribir mas rapido: Probar!!!!!!
 https://github.com/Softcatala/whisper-ctranslate2?tab=readme-ov-file
 whisper-ctranslate2 2024-03-19T10_06_21.mp4 --language Spanish --output_format txt --compute_type int8 --threads 4
+
+whisper-ctranslate2 *.mp4 --language Spanish --output_format txt --vad_filter True --model large-v3 --computer_type float32
 
 
 Model: Video

@@ -11,7 +11,7 @@ task import_videos: :environment do
     next unless Dir.exist?(directory_path)
 
     Dir.glob(File.join(directory_path, '*.mp4')).each do |file|
-      next unless mp4_downloaded_complete?(file)
+      next if in_use?(file)
 
       filename = File.basename(file)
       timestamp = filename.split('.')[0].gsub('_', ':')
@@ -43,5 +43,13 @@ def mp4_downloaded_complete?(file_path)
   Open3.popen3(command) do |_stdin, _stdout, stderr, _wait_thr|
     error_message = stderr.read
     return error_message.empty? # If there are no errors, the file is likely complete
+  end
+end
+
+
+def in_use?(file_path)
+  command = "lsof -w #{file_path}"
+  Open3.popen3(command) do |_stdin, stdout, stderr, _wait_thr|
+    !stdout.read.empty?
   end
 end
