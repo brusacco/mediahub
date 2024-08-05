@@ -4,6 +4,8 @@ require 'open3'
 
 desc 'Import Videos'
 task import_videos: :environment do
+  # batch_size = 0
+  # Parallel.each(Station.all, in_processes: batch_size) do |station|
   Station.find_each do |station|
     directory_path = Rails.public_path.join('videos', station.directory, 'temp')
 

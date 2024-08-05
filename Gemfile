@@ -80,3 +80,5 @@ gem 'sassc', '~> 2.4'
 gem 'activeadmin_addons', '~> 1.10'
 
 gem 'rubocop-rails', '~> 2.24', require: false
+
+gem "parallel", "~> 1.24"

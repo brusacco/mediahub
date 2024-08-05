@@ -2,7 +2,11 @@ require 'open3'
 
 desc 'Generate text transcription of video files'
 task generate_transcription: :environment do
-  Video.where(transcription: nil).order(posted_at: :desc).find_each do |video|
+  batch_size = 8
+  model = 'medium'
+  
+  Parallel.each(Video.where(transcription: nil).order(posted_at: :desc), in_processes: batch_size) do |video|
+  # Video.where(transcription: nil).order(posted_at: :desc).find_each do |video|
     directory_path = Rails.public_path.join('videos', video.station.directory, 'temp')
     output_file = File.join(directory_path, video.location.gsub('.mp4', '.txt'))
 
@@ -11,7 +15,7 @@ task generate_transcription: :environment do
     # Run Wisper command to generate transcription
     # command = "whisper #{video.path} --language Spanish --output_format txt --output_dir #{directory_path}"
     # command = "whisper-ctranslate2 #{video.path} --language Spanish --output_format txt --compute_type int8 --output_dir #{directory_path}"
-    command = "whisper-ctranslate2 #{video.path} --model small --language Spanish --output_format txt --device cuda --compute_type auto --vad_filter True --output_dir #{directory_path}"
+    command = "whisper-ctranslate2 #{video.path} --model #{model} --language Spanish --output_format txt --device cuda --compute_type float16 --vad_filter True --output_dir #{directory_path}"
 
     _stdout, stderr, status = Open3.capture3(command)
 
