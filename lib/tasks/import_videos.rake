@@ -48,10 +48,9 @@ def mp4_downloaded_complete?(file_path)
   end
 end
 
-
 def in_use?(file_path)
   command = "lsof -w #{file_path}"
-  Open3.popen3(command) do |_stdin, stdout, stderr, _wait_thr|
+  Open3.popen3(command) do |_stdin, stdout, _stderr, _wait_thr|
     !stdout.read.empty?
   end
 end

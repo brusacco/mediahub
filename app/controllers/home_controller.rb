@@ -10,8 +10,8 @@ class HomeController < ApplicationController
 
   def merge_videos
     input_files = params[:selected_videos] # Array of input file paths
-    output_directory = Rails.root.join('public', 'videos')
-    output_file = File.join(output_directory, "merged_video.mp4")
+    output_directory = Rails.public_path.join('videos')
+    output_file = File.join(output_directory, 'merged_video.mp4')
 
     # Extract filenames and sort selected files by filename
     input_files.sort_by! { |file_path| extract_filename(file_path) }
@@ -19,15 +19,15 @@ class HomeController < ApplicationController
 
     # Execute FFmpeg commands for each selected video
     input_files.each_with_index do |file, index|
-      temp_file = File.join(output_directory, "temp#{index+1}.ts")
+      temp_file = File.join(output_directory, "temp#{index + 1}.ts")
       temp_files << temp_file
       ffmpeg_command = "ffmpeg -y -i #{file} -c copy -bsf:v h264_mp4toannexb -f mpegts #{temp_file} 2>/dev/null &"
-      stdout, stderr, status = Open3.capture3(ffmpeg_command)
+      Open3.capture3(ffmpeg_command)
     end
 
     # Concatenate temp files
     concat_command = "ffmpeg -f mpegts -i \"concat:#{temp_files.join('|')}\" -c copy -bsf:a aac_adtstoasc #{output_file}"
-    stdout, stderr, status = Open3.capture3(concat_command)
+    Open3.capture3(concat_command)
 
     # Remove temp files
     temp_files.each { |temp_file| File.delete(temp_file) }

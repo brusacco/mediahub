@@ -81,4 +81,6 @@ gem 'activeadmin_addons', '~> 1.10'
 
 gem 'rubocop-rails', '~> 2.24', require: false
 
-gem "parallel", "~> 1.24"
+gem 'parallel', '~> 1.24'
+
+gem "whenever", "~> 1.0", require: false

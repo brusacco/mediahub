@@ -1,12 +1,14 @@
+# frozen_string_literal: true
+
 require 'open3'
 
 desc 'Generate text transcription of video files'
 task generate_transcription: :environment do
   batch_size = 8
   model = 'medium'
-  
+
   Parallel.each(Video.where(transcription: nil).order(posted_at: :desc), in_processes: batch_size) do |video|
-  # Video.where(transcription: nil).order(posted_at: :desc).find_each do |video|
+    # Video.where(transcription: nil).order(posted_at: :desc).find_each do |video|
     directory_path = Rails.public_path.join('videos', video.station.directory, 'temp')
     output_file = File.join(directory_path, video.location.gsub('.mp4', '.txt'))
 
