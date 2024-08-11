@@ -11,6 +11,8 @@ Rails.application.routes.draw do
 
   post 'home/merge_videos', to: 'home#merge_videos'
 
+  # Deploy changes from GitHub
+  post 'deploy', to: 'home#deploy'
   # Defines the root path route ("/")
   root 'home#index'
 end
