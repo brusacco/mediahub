@@ -11,7 +11,7 @@ class HomeController < ApplicationController
 
   def deploy
     Dir.chdir('/opt/rails/mediahub') do
-      system('export RAILS_ENV=production')
+      system('export RAILS_ENV=development')
 
       # Check out the latest code from the Git repository
       system('git pull')
@@ -20,10 +20,10 @@ class HomeController < ApplicationController
       system('bundle install')
 
       # Migrate the database
-      system('RAILS_ENV=production rails db:migrate')
+      system('RAILS_ENV=development rails db:migrate')
 
       # Precompile assets
-      system('RAILS_ENV=production rake assets:precompile')
+      system('RAILS_ENV=development rake assets:precompile')
 
       # Restart the Puma server
       system('touch tmp/restart.txt')
