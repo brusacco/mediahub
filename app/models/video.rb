@@ -12,6 +12,15 @@ class Video < ApplicationRecord
     location.split('T')[0].split('-')
   end
 
+  def self.ransackable_associations(_auth_object = nil)
+    ['station']
+  end
+
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[created_at id id_value location path posted_at public_path station_id thumbnail
+       transcription updated_at]
+  end
+
   private
 
   def generate_thumbnail

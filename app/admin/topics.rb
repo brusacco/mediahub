@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ActiveAdmin.register Topic do
-  permit_params :name, :status, tag_ids: []
+  permit_params :name, :status
 end
