@@ -4,6 +4,7 @@ require 'open3'
 
 # VIDEO CLASS
 class Video < ApplicationRecord
+  acts_as_taggable_on :tags
   belongs_to :station
 
   after_destroy :cleanup_files
