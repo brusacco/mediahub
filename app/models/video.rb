@@ -6,6 +6,8 @@ require 'open3'
 class Video < ApplicationRecord
   belongs_to :station
 
+  after_destroy :cleanup_files
+
   def self.ransackable_attributes(_auth_object = nil)
     %w[created_at id id_value location posted_at updated_at path public_path transcription thumbnail]
   end
@@ -36,5 +38,9 @@ class Video < ApplicationRecord
 
   def remove_thumbnail
     FileUtils.rm_rf(thumbnail)
+  end
+
+  def cleanup_files
+    FileUtils.rm_rf(path)
   end
 end

@@ -8,7 +8,6 @@ task generate_transcription: :environment do
   model = 'medium'
 
   Parallel.each(Video.where(transcription: nil).order(posted_at: :desc), in_processes: batch_size) do |video|
-    # Video.where(transcription: nil).order(posted_at: :desc).find_each do |video|
     directory_path = Rails.public_path.join('videos', video.station.directory, 'temp')
     output_file = File.join(directory_path, video.location.gsub('.mp4', '.txt'))
 
