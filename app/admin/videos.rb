@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register Video do
-  permit_params :location, :posted_at, :transcription, :posted_at, :station_id, tag_ids: []
+  permit_params :location, :posted_at, :transcription, :posted_at, :station_id
 
   index do
     selectable_column
@@ -19,7 +19,6 @@ ActiveAdmin.register Video do
       f.input :posted_at
       f.input :station
       f.input :transcription
-      f.input :tags, as: :tags
     end
     actions
   end

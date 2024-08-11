@@ -4,22 +4,9 @@ require 'open3'
 
 # VIDEO CLASS
 class Video < ApplicationRecord
-  acts_as_taggable_on :tags
   belongs_to :station
 
   after_destroy :cleanup_files
-
-  def self.ransackable_attributes(_auth_object = nil)
-    %w[created_at id id_value location posted_at updated_at path public_path transcription thumbnail]
-  end
-
-  def self.ransackable_associations(_auth_object = nil)
-    ['station']
-  end
-
-  def self.ransackable_scopes(_auth_object = nil)
-    %w[taggings_id_eq base_tags_id_eq tag_taggings_id_eq tags_id_eq]
-  end
 
   def directories
     location.split('T')[0].split('-')
