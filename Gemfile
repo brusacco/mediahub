@@ -83,4 +83,6 @@ gem 'rubocop-rails', '~> 2.24', require: false
 
 gem 'parallel', '~> 1.24'
 
-gem "whenever", "~> 1.0", require: false
+gem 'whenever', '~> 1.0', require: false
+
+gem 'acts-as-taggable-on', '~> 10.0'

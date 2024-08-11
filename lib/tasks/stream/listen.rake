@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # lib/tasks/video_processing.rake
 
 namespace :stream do

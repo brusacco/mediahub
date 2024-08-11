@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Use this file to easily define all of your cron jobs.
 #
 # It's helpful, but not entirely necessary to understand cron before proceeding.
@@ -7,5 +9,5 @@ set :environment, 'production'
 # set :output, "/path/to/my/cron_log.log"
 
 every 5.minutes do
- rake 'process_videos'
+  rake 'process_videos'
 end
