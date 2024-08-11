@@ -27,6 +27,8 @@ rake generate_transcription
 RESET THE MAIN BRANCH LOCALLY:
 https://graphite.dev/guides/git-overwrite-local-remote
 
+aa
+
 
 
 Running Whisper on CUDA/NVIDIA
