@@ -8,6 +8,29 @@ class HomeController < ApplicationController
     @videos = Video.where.not(transcription: nil).order(posted_at: :desc).limit(20)
   end
 
+  def deploy
+    Dir.chdir('/opt/rails/mediahub') do
+      system('export RAILS_ENV=production')
+
+      # Check out the latest code from the Git repository
+      system('git pull')
+
+      # Install dependencies
+      system('bundle install')
+
+      # Migrate the database
+      system('RAILS_ENV=production rails db:migrate')
+
+      # Precompile assets
+      system('RAILS_ENV=production rake assets:precompile')
+
+      # Restart the Puma server
+      system('touch tmp/restart.txt')
+    end
+
+    render plain: 'Deployment complete!'
+  end
+
   def merge_videos
     input_files = params[:selected_videos] # Array of input file paths
     output_directory = Rails.public_path.join('videos')
