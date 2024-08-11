@@ -17,6 +17,10 @@ class Video < ApplicationRecord
     ['station']
   end
 
+  def self.ransackable_scopes(_auth_object = nil)
+    %w[taggings_id_eq base_tags_id_eq tag_taggings_id_eq tags_id_eq]
+  end
+
   def directories
     location.split('T')[0].split('-')
   end
