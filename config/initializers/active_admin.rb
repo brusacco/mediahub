@@ -6,7 +6,7 @@ ActiveAdmin.setup do |config|
   # Set the title that is displayed on the main layout
   # for each of the active admin pages.
   #
-  config.site_title = 'Mediahub'
+  config.site_title = 'MediaHUB'
 
   # Set the link url for the title. For example, to take
   # users to your main site. Defaults to no link.
@@ -336,7 +336,7 @@ ActiveAdmin.setup do |config|
   # By default, the footer shows the current Active Admin version. You can
   # override the content of the footer here.
   #
-  # config.footer = 'my custom footer text'
+  config.footer = "MediaHUB © #{Date.today.year}"
 
   # == Sorting
   #

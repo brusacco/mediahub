@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_08_11_173034) do
+ActiveRecord::Schema[7.1].define(version: 2024_08_14_193217) do
   create_table "active_admin_comments", force: :cascade do |t|
     t.string "namespace"
     t.text "body"
@@ -70,7 +70,6 @@ ActiveRecord::Schema[7.1].define(version: 2024_08_11_173034) do
     t.string "directory"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "stream_url"
   end
 
   create_table "taggings", force: :cascade do |t|
@@ -101,7 +100,15 @@ ActiveRecord::Schema[7.1].define(version: 2024_08_11_173034) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "taggings_count", default: 0
+    t.string "variations"
     t.index ["name"], name: "index_tags_on_name", unique: true
+  end
+
+  create_table "tags_topics", id: false, force: :cascade do |t|
+    t.integer "tag_id"
+    t.integer "topic_id"
+    t.index ["tag_id"], name: "index_tags_topics_on_tag_id"
+    t.index ["topic_id"], name: "index_tags_topics_on_topic_id"
   end
 
   create_table "topics", force: :cascade do |t|

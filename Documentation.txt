@@ -59,3 +59,10 @@ Model: Station
 
 rails g model Station name:string directory:string
 rails generate active_admin:resource Station
+
+
+#== New features
+rails g migration AddRelationsToTagsTopics tag_id:integer:index topic_id:integer:index
+rails g migration AddVariationsToTags variations:string
+rails generate active_admin:resource Tag
+rails g model TagsTopic tag:references topic:references
