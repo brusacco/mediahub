@@ -3,7 +3,7 @@ ActiveAdmin.register Tag do
 
   filter :name
   filter :variations
-  
+
   index do
     selectable_column
     id_column
@@ -20,10 +20,10 @@ ActiveAdmin.register Tag do
   form do |f|
     f.inputs do
       f.input :name
-      f.input :variations
+      f.input :variations, as: :tags
       f.input :topics
     end
     f.actions
   end
-  
+
 end
