@@ -36,12 +36,12 @@ ActiveAdmin.register Topic do
       column do
         f.inputs 'Crear Tópico', multipart: :true do
           f.input :name
-          f.input :tags
+          f.input :tags, as: :tags
           f.input :status
         end
       end
     end
 
     f.actions
-  end  
+  end
 end
