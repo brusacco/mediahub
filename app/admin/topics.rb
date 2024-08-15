@@ -34,7 +34,7 @@ ActiveAdmin.register Topic do
   form html: { enctype: 'multipart/form-data', multipart: true } do |f|
     columns do
       column do
-        f.inputs 'Crear Tópico', multipart: :true do
+        f.inputs 'Crear Tópico', multipart: true do
           f.input :name
           f.input :tags, as: :tags
           f.input :status
