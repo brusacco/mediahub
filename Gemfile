@@ -88,3 +88,5 @@ gem 'whenever', '~> 1.0', require: false
 gem 'acts-as-taggable-on', '~> 10.0'
 
 gem 'puma-daemon', '~> 0.3.2'
+
+gem "mysql2", "~> 0.5.6"
