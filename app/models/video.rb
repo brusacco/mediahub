@@ -9,13 +9,13 @@ class Video < ApplicationRecord
 
   after_destroy :cleanup_files
 
-  def self.ransackable_attributes(_auth_object = nil)
-    %w[created_at id id_value location posted_at updated_at path public_path transcription thumbnail]
-  end
+  # def self.ransackable_attributes(_auth_object = nil)
+  #   %w[created_at id id_value location posted_at updated_at path public_path transcription thumbnail]
+  # end
 
-  def self.ransackable_associations(_auth_object = nil)
-    ['station']
-  end
+  # def self.ransackable_associations(_auth_object = nil)
+  #   ['station']
+  # end
 
   def directories
     location.split('T')[0].split('-')

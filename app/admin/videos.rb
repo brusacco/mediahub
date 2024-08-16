@@ -3,6 +3,10 @@
 ActiveAdmin.register Video do
   permit_params :location, :posted_at, :transcription, :posted_at, :station_id
 
+  filter :station
+  filter :transcription
+  filter :created_at
+
   index do
     selectable_column
     id_column
