@@ -72,4 +72,5 @@ rails generate devise User
 rails generate active_admin:resource User
 rails generate devise:views users
 rails generate model UserTopic user:references topic:references
-rails generate devise:controllers users
+
+rails generate controller Topics show

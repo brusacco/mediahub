@@ -13,8 +13,6 @@ module Mediahub
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.1
 
-    config.hosts << 'www.mediahub.com.py'
-
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
@@ -27,5 +25,8 @@ module Mediahub
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+
+    config.time_zone = 'America/Asuncion'
+    config.active_record.yaml_column_permitted_classes = [Symbol, Date, Time, ActiveSupport::TimeWithZone, ActiveSupport::TimeZone]    
   end
 end

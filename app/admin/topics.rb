@@ -3,6 +3,27 @@
 ActiveAdmin.register Topic do
   permit_params :name, :status, tag_ids: [], user_ids: []
 
+  sidebar :versiones, :partial => "topics/version", only: :show
+  
+  controller do
+    def show
+      @topic = Topic.includes(versions: :item).find(params[:id])
+      @versions = @topic.versions 
+      @topic = @topic.versions[params[:version].to_i].reify if params[:version]
+      show! #it seems to need this
+    end
+  end
+  
+  action_item :topic, only: [:show] do
+    link_to "Ver historial", admin_topic_path(resource)+'/historial', method: :get
+  end
+  
+  member_action :historial do
+    @topic = Topic.find(params[:id])
+    @versions = PaperTrail::Version.where(item_type: 'Topic', item_id: @topic.id)
+    render "topics/historial"    
+  end
+
   filter :name
   filter :status
   filter :users

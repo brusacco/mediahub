@@ -1,0 +1,12 @@
+panel "Historial del Topico" do
+  table_for assigns[:versions] do
+    column ("Item") do |v| 
+      if v.item
+        link_to v.item.name, [:admin, v.item]
+      end
+    end      
+    column ("Tipo") { |v| v.item_type.underscore.humanize }
+    column ("Modificada el") { |v| v.created_at.strftime('%d/%m/%Y - %H:%M:%S') }
+    column ("Admin") { |v| link_to AdminUser.find(v.whodunnit).email, [:admin, AdminUser.find(v.whodunnit)] }
+  end
+end
