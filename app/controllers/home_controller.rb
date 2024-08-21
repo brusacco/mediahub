@@ -4,7 +4,9 @@ require 'open3'
 
 # Home controller
 class HomeController < ApplicationController
+  before_action :authenticate_user!, except: :deploy
   skip_before_action :verify_authenticity_token, only: :deploy
+  
   def index
     @videos = Video.where.not(transcription: nil).order(posted_at: :desc).limit(20)
   end
