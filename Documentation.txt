@@ -21,8 +21,10 @@ ffmpeg -i 'https://abc-color.cdn.vustreams.com/live/d87c2b7b-9ecf-4e6e-b63b-b327
 
 
 Secuencia para meter videos en la DB
-rake import_videos
-rake generate_transcription
+RAILS_ENV=production rake import_videos
+RAILS_ENV=production rake generate_transcription
+
+RAILS_ENV=production rake stream:listen
 
 RESET THE MAIN BRANCH LOCALLY:
 https://graphite.dev/guides/git-overwrite-local-remote
