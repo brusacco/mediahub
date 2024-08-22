@@ -9,6 +9,7 @@ namespace :stream do
 
     # Iterate through each Station record
     Station.find_each do |station|
+      puts "Processing station #{station.name} (ID: #{station.id})"
       # Define the base target directory
       base_directory = "public/videos/#{station.directory}/temp/"
 
