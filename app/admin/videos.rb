@@ -48,11 +48,13 @@ ActiveAdmin.register Video do
   
       row :video do |file| 
         video(width: 480, height: 320, controls: true, autobuffer: true) do
-          source(src: file.public_path, type: 'video/mp4')
+          source(src: "#{root_url}#{file.public_path}", type: 'video/mp4')
         end
-        # video_tag url_for('https://www.youtube.com/watch?v=q1gnOM88OjU'), type: "video/mp4", controls: true, size: '480x320'
       end
 
+      # row :preview do |file|
+      #   video_tag file.public_path, controls: true, size: '480x320', skip_pipeline: true
+      # end
     end
   end   
 end
