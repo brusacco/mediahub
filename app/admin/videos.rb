@@ -14,13 +14,6 @@ ActiveAdmin.register Video do
     column :posted_at
     column :station
     column :transcription
-
-    # column 'Video' do |video|
-    #   video(width: 320, height: 240, controls: true) do
-    #     source(src: video.public_path, type: 'video/mp4')
-    #   end
-    # end
-
     actions
   end
 
@@ -48,12 +41,12 @@ ActiveAdmin.register Video do
   
       row :video do |file| 
         video(width: 480, height: 320, controls: true, autobuffer: true) do
-          source(src: "#{root_url}#{file.public_path}", type: 'video/mp4')
+          source(src: root_url+file.public_path, type: 'video/mp4')
         end
       end
 
       # row :preview do |file|
-      #   video_tag file.public_path, controls: true, size: '480x320', skip_pipeline: true
+      #   video_tag root_url+file.public_path, controls: true, size: '480x320'
       # end
     end
   end   
