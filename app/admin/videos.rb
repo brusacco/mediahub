@@ -5,6 +5,7 @@ ActiveAdmin.register Video do
 
   filter :station
   filter :transcription
+  filter :location
   filter :created_at
 
   index do
@@ -14,6 +15,7 @@ ActiveAdmin.register Video do
     column :posted_at
     column :station
     column :transcription
+    column :tag_list
     actions
   end
 
@@ -36,6 +38,7 @@ ActiveAdmin.register Video do
       row :thumbnail
       row :public_path
       row :transcription
+      row :tag_list
       row :created_at
       row :updated_at
   
