@@ -11,10 +11,13 @@ namespace :stream do
     threads = []
 
     # Set up signal handling for Ctrl+C (SIGINT)
-    Signal.trap('INT') do
-      puts "\nSIGINT received. Setting stream_status to :disconnected for all stations."
-      Station.update_all(stream_status: :disconnected) # rubocop:disable Rails/SkipsModelValidations
-      exit 1
+    # Handle various termination signals
+    %w[INT TERM HUP QUIT].each do |signal|
+      Signal.trap(signal) do
+        puts "\n#{signal} signal received. Setting stream_status to :disconnected for all stations."
+        Station.update_all(stream_status: :disconnected) # rubocop:disable Rails/SkipsModelValidations
+        exit 1
+      end
     end
 
     # Iterate through each Station record
