@@ -10,6 +10,13 @@ namespace :stream do
     # Create an array to keep track of threads
     threads = []
 
+    # Set up signal handling for Ctrl+C (SIGINT)
+    Signal.trap('INT') do
+      puts "\nSIGINT received. Setting stream_status to :disconnected for all stations."
+      Station.update_all(stream_status: :disconnected) # rubocop:disable Rails/SkipsModelValidations
+      exit 1
+    end
+
     # Iterate through each Station record
     Station.find_each do |station|
       threads << Thread.new do
@@ -21,17 +28,24 @@ namespace :stream do
           # Ensure the directory exists
           FileUtils.mkdir_p(base_directory)
 
+          # Update station status to connected while processing
+          station.update(stream_status: :connected)
+
           # Construct the ffmpeg command with station's stream_url and target directory
           command = "ffmpeg -i '#{station.stream_url}' -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 '#{base_directory}/%Y-%m-%dT%H_%M_%S.mp4'"
 
           # Execute the command
           stdout, stderr, status = Open3.capture3(command)
 
+          # If ffmpeg fails or ends this station is disconnected
+          station.update(stream_status: :disconnected)
+
           # Log the output and errors
           Rails.logger.info("Processing station #{station.id}: #{stdout}")
           Rails.logger.error("Error processing station #{station.id}: #{stderr}") unless status.success?
         rescue => e
           Rails.logger.error("Thread error for station #{station.id}: #{e.message}")
+          station.update(status: :disconnected)
         end
       end
     end
