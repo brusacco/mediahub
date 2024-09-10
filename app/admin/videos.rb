@@ -6,8 +6,7 @@ ActiveAdmin.register Video do
   filter :station
   filter :transcription
   filter :tags
-  filter :location
-  filter :created_at
+  filter :posted_at, as: :date_range
 
   index do
     selectable_column
