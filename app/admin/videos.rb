@@ -10,8 +10,9 @@ ActiveAdmin.register Video do
 
   index do
     selectable_column
-    id_column
-    column :location
+    column 'Thumb' do |video|
+      image_tag "/#{video.thumbnail_path}", width: 200 unless video.thumbnail_path.nil?
+    end
     column :posted_at
     column :station
     column :transcription
@@ -41,10 +42,10 @@ ActiveAdmin.register Video do
       row :tag_list
       row :created_at
       row :updated_at
-  
-      row :video do |file| 
+
+      row :video do |file|
         video(width: 480, height: 320, controls: true, autobuffer: true) do
-          source(src: root_url+file.public_path, type: 'video/mp4')
+          source(src: root_url + file.public_path, type: 'video/mp4')
         end
       end
 
@@ -52,5 +53,5 @@ ActiveAdmin.register Video do
       #   video_tag root_url+file.public_path, controls: true, size: '480x320'
       # end
     end
-  end   
+  end
 end

@@ -6,7 +6,7 @@ task tagger: :environment do
 
     video.tag_list = result.data
     host = 'https://www.mediahub.com.py/'
-    url = host+video.public_path
+    url = host + video.public_path
     puts url
     puts video.location
     puts video.posted_at

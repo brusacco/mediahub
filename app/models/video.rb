@@ -21,21 +21,22 @@ class Video < ApplicationRecord
     location.split('T')[0].split('-')
   end
 
-  private
-
   def generate_thumbnail
     thumbnail_path = path.sub(/\.mp4\z/, '.png') # Change file extension to PNG
+    public_thumbnail_path = public_path.sub(/\.mp4\z/, '.png') # Change file extension to PNG
 
     # Run ffmpeg command to generate thumbnail
-    command = "ffmpeg -i #{path} -ss 00:00:01 -vframes 1 #{thumbnail_path}"
+    command = "ffmpeg -i #{path} -ss 00:00:01 -frames:v 1 #{thumbnail_path}"
     _stdout, stderr, status = Open3.capture3(command)
 
     if status.success?
-      update(thumbnail: thumbnail_path)
+      update(thumbnail_path: public_thumbnail_path)
     else
       Rails.logger.error("Error generating thumbnail for #{location}: #{stderr}")
     end
   end
+
+  private
 
   def remove_thumbnail
     FileUtils.rm_rf(thumbnail)
