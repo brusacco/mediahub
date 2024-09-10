@@ -10,9 +10,7 @@ ActiveAdmin.register Station do
     column :id
     column :name
     column :directory
-    column :stream_status do |station|
-      status_tag(station.stream_status)
-    end
+    tag_column :stream_status
     column :created_at
     column :updated_at
   end
