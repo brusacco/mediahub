@@ -13,5 +13,6 @@ ActiveAdmin.register Station do
     tag_column :stream_status
     column :created_at
     column :updated_at
+    actions
   end
 end
