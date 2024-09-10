@@ -14,7 +14,6 @@ task tagger: :environment do
     puts '---------------------------------------------------'
 
     video.save!
-    video.touch
   rescue StandardError => e
     puts e.message
     sleep 1
