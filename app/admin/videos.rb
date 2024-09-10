@@ -5,6 +5,7 @@ ActiveAdmin.register Video do
 
   filter :station
   filter :transcription
+  filter :tags
   filter :location
   filter :created_at
 
