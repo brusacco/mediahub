@@ -4,7 +4,7 @@ ActiveAdmin.register Video do
   permit_params :location, :posted_at, :transcription, :posted_at, :station_id
 
   filter :station
-  filter :transcription
+  filter :transcription_cont, label: 'Transcripción'
   filter :tags
   filter :posted_at, as: :date_range
 
