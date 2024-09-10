@@ -22,11 +22,12 @@ class Video < ApplicationRecord
   end
 
   def generate_thumbnail
+    # Set public path for thumbnail
     thumbnail_path = path.sub(/\.mp4\z/, '.png') # Change file extension to PNG
     public_thumbnail_path = public_path.sub(/\.mp4\z/, '.png') # Change file extension to PNG
 
     # Run ffmpeg command to generate thumbnail
-    command = "ffmpeg -i #{path} -ss 00:00:01 -frames:v 1 #{thumbnail_path}"
+    command = "ffmpeg -y -i #{path} -ss 00:00:01 -frames:v 1 -vf 'scale=500:-1' #{thumbnail_path}"
     _stdout, stderr, status = Open3.capture3(command)
 
     if status.success?
