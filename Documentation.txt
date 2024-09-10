@@ -6,6 +6,9 @@ https://github.com/activeadmin/activeadmin/issues/3819#issuecomment-351377822
 
 
 
+####################################################################################################
+# Generar Transcripciones
+####################################################################################################
 ffmpeg -i https://alba-py-c9n-c9n.stream.mediatiquestream.com/index.m3u8 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "c9n/temp/%Y-%m-%dT%H_%M_%S.mp4"
 ffmpeg -i https://tigocloudgen.desdeparaguay.net/unicanal/unicanal_baja/playlist.m3u8 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "unicanal/temp/%Y-%m-%dT%H_%M_%S.mp4"
 whisper *.mp4 --language Spanish --output_format txt
@@ -20,13 +23,20 @@ ffmpeg -i https://zn1gen.desdeparaguay.net/unicanal/unicanal_alta/playlist.m3u8?
 ffmpeg -i 'https://abc-color.cdn.vustreams.com/live/d87c2b7b-9ecf-4e6e-b63b-b32772bd7851/live.isml/d87c2b7b-9ecf-4e6e-b63b-b32772bd7851.m3u8' -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "abc-tv/temp/%Y-%m-%dT%H_%M_%S.mp4"
 
 
-Generar thumbnail de los videos
+####################################################################################################
+# Generar thumbnail de los videos
+####################################################################################################
+https://trac.ffmpeg.org/wiki/Create%20a%20thumbnail%20image%20every%20X%20seconds%20of%20the%20video
 
+ffmpeg -i 2024-08-10T20_49_03.mp4 -ss 00:00:14.435 -frames:v 1 out.png
 ffmpeg -i 2024-08-10T20_49_03.mp4 -vf "select='eq(pict_type,PICT_TYPE_I)'" -vsync vfr 2024-08-10T20_49_03/thumb%04d.png
 ffmpeg -i 2024-08-10T20_49_03.mp4 -vf thumbnail=n=100 2024-08-10T20_49_03/thumb%04d.png
 
 
 
+####################################################################################################
+# RAKE tasks para el sistema
+####################################################################################################
 Secuencia para meter videos en la DB
 RAILS_ENV=production rake import_videos
 RAILS_ENV=production rake generate_transcription
