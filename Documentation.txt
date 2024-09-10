@@ -45,6 +45,7 @@ RAILS_ENV=production rake stream:listen
 
 RESET THE MAIN BRANCH LOCALLY:
 https://graphite.dev/guides/git-overwrite-local-remote
+git reset --hard origin/main
 
 aa
 
