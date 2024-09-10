@@ -16,7 +16,7 @@ task generate_transcription: :environment do
     # Run Wisper command to generate transcription
     # command = "whisper #{video.path} --language Spanish --output_format txt --output_dir #{directory_path}"
     # command = "whisper-ctranslate2 #{video.path} --language Spanish --output_format txt --compute_type int8 --output_dir #{directory_path}"
-    command = "whisper-ctranslate2 #{video.path} --model #{model} --language Spanish --output_format txt --device cuda --compute_type float16 --vad_filter True --output_dir #{directory_path}"
+    command = "whisper-ctranslate2 #{video.path} --model #{model} --language Spanish --output_format txt --device cuda --compute_type float8 --vad_filter True --output_dir #{directory_path}"
 
     _stdout, stderr, status = Open3.capture3(command)
 
