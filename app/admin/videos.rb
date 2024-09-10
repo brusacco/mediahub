@@ -36,7 +36,10 @@ ActiveAdmin.register Video do
       row 'Fecha', &:posted_at
       row 'Estacion', &:station
       row :path
-      row :thumbnail
+      row :thumbnail_path
+      row "Thumbnail" do |video|
+        image_tag "/#{video.thumbnail_path}", width: 500 unless video.thumbnail_path.nil?
+      end
       row :public_path
       row :transcription
       row :tag_list
