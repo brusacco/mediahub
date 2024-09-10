@@ -39,10 +39,11 @@ class Video < ApplicationRecord
   private
 
   def remove_thumbnail
-    FileUtils.rm_rf(thumbnail)
+    FileUtils.rm_rf(path.sub(/\.mp4\z/, '.png'))
   end
 
   def cleanup_files
     FileUtils.rm_rf(path)
+    remove_thumbnail
   end
 end
