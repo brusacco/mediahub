@@ -34,8 +34,22 @@ namespace :stream do
           # Update station status to connected while processing
           station.update(stream_status: :connected)
 
-          # Construct the ffmpeg command with station's stream_url and target directory
-          command = "ffmpeg -i '#{station.stream_url}' -timeout 60000000 -rw_timeout 60000000 -stimeout 60000000 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 '#{base_directory}/%Y-%m-%dT%H_%M_%S.mp4'"
+          max_retries = 5
+          retries = 0
+
+          begin
+            # Construct the ffmpeg command with station's stream_url and target directory
+            command = "ffmpeg -i '#{station.stream_url}' -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 '#{base_directory}/%Y-%m-%dT%H_%M_%S.mp4'"
+          rescue => e
+            if retries < max_retries
+              puts "Failed to connect to #{station.name}. Retrying..."
+              retries += 1
+              sleep(10)
+              retry
+            else
+              puts "Failed to connect after #{max_retries} retries"
+            end
+          end
 
           # Execute the command
           stdout, stderr, status = Open3.capture3(command)
