@@ -21,6 +21,7 @@ namespace :stream do
       url = request.url
       if url.include?('playlist.m3u8') && @current_station
         puts "Found Stream URL: #{url}"
+        puts '---------------------------------------------------------'
         # Update the station's stream_url when the stream URL is found
         @current_station.update(stream_url: url)
       end
@@ -33,6 +34,8 @@ namespace :stream do
     driver.manage.timeouts.script_timeout = 60 # 30 seconds for scripts
 
     Station.where.not(stream_source: nil).find_each do |station|
+      puts '---------------------------------------------------------'
+      puts "Processing station: #{station.name}"
       @current_station = station
       # Navigate to the desired webpage
       driver.navigate.to(station.stream_source)
