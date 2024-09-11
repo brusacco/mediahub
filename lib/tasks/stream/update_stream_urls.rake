@@ -24,6 +24,18 @@ namespace :stream do
         puts '---------------------------------------------------------'
         # Update the station's stream_url when the stream URL is found
         @current_station.update(stream_url: url)
+      elsif url.include?('paraguaytvhd.m3u8') ||
+            url.include?('canalpropy.m3u8') ||
+            url.include?('telefuturoparaguay.m3u8')
+        puts "Twitch Found Stream URL: #{url}"
+        puts '---------------------------------------------------------'
+        # Update the station's stream_url when the stream URL is found
+        @current_station.update(stream_url: url)
+      elsif url.include?('index.m3u8') && @current_station.name == 'C9N'
+        puts "Found Stream URL: #{url} C9N"
+        puts '---------------------------------------------------------'
+        # Update the station's stream_url when the stream URL is found
+        @current_station.update(stream_url: url)
       end
       continue.call(request)
     end
