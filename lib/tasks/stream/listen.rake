@@ -34,8 +34,6 @@ namespace :stream do
           # Update station status to connected while processing
           station.update(stream_status: :connected)
 
-          sleep(5)
-
           # Construct the ffmpeg command with station's stream_url and target directory
           command = "ffmpeg -i '#{station.stream_url}' -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 '#{base_directory}/%Y-%m-%dT%H_%M_%S.mp4'"
 
