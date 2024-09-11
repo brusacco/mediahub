@@ -57,7 +57,7 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem 'web-console'
-
+  
   # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
   # gem "rack-mini-profiler"
 
@@ -68,7 +68,6 @@ end
 group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem 'capybara'
-  gem 'selenium-webdriver'
 end
 
 gem 'devise', '~> 4.9'
@@ -92,3 +91,7 @@ gem 'puma-daemon', '~> 0.3.2'
 gem "mysql2", "~> 0.5.6"
 
 gem "paper_trail", "~> 15.1"
+
+gem 'selenium-webdriver'
+
+gem "selenium-devtools", "~> 0.128.0"

@@ -42,13 +42,15 @@ RAILS_ENV=production rake import_videos
 RAILS_ENV=production rake generate_transcription
 
 RAILS_ENV=production rake stream:listen
+nohup RAILS_ENV=production rake stream:listen > output.log 2>&1 &
 
 RESET THE MAIN BRANCH LOCALLY:
 https://graphite.dev/guides/git-overwrite-local-remote
 git reset --hard origin/main
 
-aa
 
+RUN PUMA ON SERVER
+nohup puma  &> output.log &
 
 
 Running Whisper on CUDA/NVIDIA
