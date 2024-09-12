@@ -10,6 +10,7 @@ class Video < ApplicationRecord
   after_destroy :cleanup_files
 
   scope :no_transcription, -> { where(transcription: nil) }
+  scope :no_thumbnail, -> { where(thumbnail_path: nil) }
 
   # def self.ransackable_attributes(_auth_object = nil)
   #   %w[created_at id id_value location posted_at updated_at path public_path transcription thumbnail]

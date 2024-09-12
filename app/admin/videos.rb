@@ -10,6 +10,7 @@ ActiveAdmin.register Video do
 
   scope :all
   scope :no_transcription
+  scope :no_thumbnail
 
   index do
     selectable_column
