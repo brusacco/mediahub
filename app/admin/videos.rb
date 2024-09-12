@@ -17,11 +17,7 @@ ActiveAdmin.register Video do
     column :station
     column :transcription do |video|
       if video.tag_list.present?
-        all_tags = video.tags.map do |tag|
-          tag_variations = tag.variations || ''
-          "#{tag.name}, #{tag_variations}"
-        end.split(',').flatten
-        highlighted_transcription = highlight(video.transcription, all_tags, highlighter: '<span class="highlight">\1</span>')
+        highlighted_transcription = highlight(video.transcription, video.tag_list, highlighter: '<span class="highlight">\1</span>')
         highlighted_transcription.html_safe
       else
         video.transcription
