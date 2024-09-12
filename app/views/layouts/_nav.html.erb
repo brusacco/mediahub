@@ -1,22 +1,86 @@
- <nav class="bg-indigo-600">
-  <div class="mx-auto px-4 sm:px-6 lg:px-8 py-2">
+<nav class="bg-indigo-600">
+  <div class="mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex h-16 items-center justify-between">
       <div class="flex items-center">
+        <div class="flex-shrink-0 font-bold text-yellow-200">MediaHUB</div>
         <div class="hidden md:block">
           <div class="ml-10 flex items-baseline space-x-4">
-            <%= link_to "Inicio", root_path, class: ["text-dark rounded-md px-3 py-2 text-sm font-medium", ("bg-indigo-700" if request.path == root_path)] %>
-          </div>
-        </div>
-      </div>
-      <div class="hidden md:block">
-        <div class="ml-4 flex items-center md:ml-6">
-          <div class="relative ml-3">
-            <div class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" tabindex="-1">
-              <%= link_to 'Cerrar Sesión', destroy_user_session_path, method: :delete, data: { turbo_method: :delete }, class: 'block px-4 py-2 text-sm text-gray-700' %>              
+            <!-- Botón de Inicio -->
+            <%= link_to "Inicio", root_path, class: ["text-white rounded-md px-3 py-2 text-sm font-medium", ("bg-indigo-700" if request.path == root_path)] %>
+            
+            <!-- Dropdown de Tópicos -->
+            <div class="relative">
+              <button type="button" class="text-white hover:bg-indigo-500 hover:bg-opacity-75 rounded-md px-3 py-2 text-sm font-medium flex items-center justify-between w-full md:w-auto" id="topics-menu-button" aria-expanded="false" aria-haspopup="true" onclick="toggleTopicsMenu(event)">
+                Tópicos <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+              </button>
+              
+              <!-- Menú desplegable de Tópicos -->
+              <div id="topics-menu" class="absolute z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" tabindex="-1">
+                <% @topicos.each do |topic| %>
+                  <%= link_to topic.name, "#", class: 'text-sm font-medium rounded-md hover:bg-gray-100 block px-4 py-2' %>
+                <% end %>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- Profile / Logout -->
+      <div class="hidden md:block">
+        <div class="ml-4 flex items-center md:ml-6">
+          <div class="relative ml-3">
+            <button type="button" class="relative flex max-w-xs items-center rounded-full bg-indigo-600 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+              <%= image_tag 'default-avatar.png', class: 'h-8 w-8 rounded-full' %>
+            </button>
+            <!-- Menú desplegable de usuario -->
+            <div id="user-menu" class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" tabindex="-1">
+              <%= link_to 'Cerrar Sesión', destroy_user_session_path, method: :delete, data: { turbo_method: :delete }, class: 'block px-4 py-2 text-sm text-gray-700' %>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </nav>
+
+<script>
+  document.addEventListener("turbo:load", function() {
+    // Toggle para el menú de usuario (Cerrar Sesión)
+    var userMenuButton = document.getElementById('user-menu-button');
+    var userMenu = document.getElementById('user-menu');
+
+    userMenuButton.addEventListener('click', function(event) {
+      userMenu.classList.toggle('hidden');
+      event.stopPropagation();
+    });
+
+    // Toggle para el menú de tópicos
+    var topicsMenuButton = document.getElementById('topics-menu-button');
+    var topicsMenu = document.getElementById('topics-menu');
+
+    topicsMenuButton.addEventListener('click', function(event) {
+      topicsMenu.classList.toggle('hidden');
+      event.stopPropagation();
+    });
+
+    // Ocultar menús cuando se hace clic fuera de ellos
+    document.addEventListener('click', function() {
+      if (!userMenu.classList.contains('hidden')) {
+        userMenu.classList.add('hidden');
+      }
+      if (!topicsMenu.classList.contains('hidden')) {
+        topicsMenu.classList.add('hidden');
+      }
+    });
+
+    // Prevenir cierre de menús al hacer clic dentro de ellos
+    userMenu.addEventListener('click', function(event) {
+      // event.stopPropagation();
+    });
+    
+    topicsMenu.addEventListener('click', function(event) {
+      event.stopPropagation();
+    });
+  });
+</script>
