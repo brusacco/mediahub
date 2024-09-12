@@ -8,6 +8,9 @@ ActiveAdmin.register Video do
   filter :tags
   filter :posted_at, as: :date_range
 
+  scope :all
+  scope :no_transcription
+
   index do
     selectable_column
     column 'Thumb' do |video|
