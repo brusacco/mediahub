@@ -42,7 +42,10 @@ RAILS_ENV=production rake import_videos
 RAILS_ENV=production rake generate_transcription
 
 RAILS_ENV=production rake stream:listen
+RAILS_ENV=production rake stream:update_stream_urls
 nohup RAILS_ENV=production rake stream:listen > output.log 2>&1 &
+
+kill -9 $(ps wuax | grep /opt/google/chrome/chrome | awk {'print $2'})
 
 RESET THE MAIN BRANCH LOCALLY:
 https://graphite.dev/guides/git-overwrite-local-remote

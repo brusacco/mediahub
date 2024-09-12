@@ -15,7 +15,14 @@ ActiveAdmin.register Video do
     end
     column :posted_at
     column :station
-    column :transcription
+    column :transcription do |video|
+      if video.tag_list.present?
+        highlighted_transcription = highlight(video.transcription, video.tag_list, highlighter: '<span class="highlight">\1</span>')
+        highlighted_transcription.html_safe
+      else
+        video.transcription
+      end
+    end
     column :tag_list
     actions
   end
