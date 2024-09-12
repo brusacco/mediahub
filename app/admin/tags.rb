@@ -20,7 +20,7 @@ ActiveAdmin.register Tag do
   form do |f|
     f.inputs do
       f.input :name
-      f.input :variations, as: :tags
+      f.input :variations
       f.input :topics
     end
     f.actions
