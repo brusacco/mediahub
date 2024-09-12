@@ -14,7 +14,6 @@ class ApplicationController < ActionController::Base
 
   def user_topics
     return unless user_signed_in?
-
     @topicos = current_user.topics.where(status: true)
   end  
 end
