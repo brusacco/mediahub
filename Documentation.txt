@@ -99,3 +99,4 @@ rails generate devise:views users
 rails generate model UserTopic user:references topic:references
 
 rails generate controller Topics show
+rails g controller Tags show

@@ -13,6 +13,7 @@ Rails.application.routes.draw do
   post 'home/merge_videos', to: 'home#merge_videos'
 
   resources :topics, only: [:show]
+  resources :tags, only: [:show]
 
   # Deploy changes from GitHub
   post 'deploy', to: 'home#deploy'
