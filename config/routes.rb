@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  get 'topics/show'
   devise_for :users
   devise_for :admin_users, ActiveAdmin::Devise.config
   ActiveAdmin.routes(self)
@@ -12,6 +11,8 @@ Rails.application.routes.draw do
   get 'up' => 'rails/health#show', as: :rails_health_check
 
   post 'home/merge_videos', to: 'home#merge_videos'
+
+  resources :topics, only: [:show]
 
   # Deploy changes from GitHub
   post 'deploy', to: 'home#deploy'
