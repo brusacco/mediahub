@@ -1,4 +1,12 @@
-<div>
-  <h1 class="font-bold text-4xl">Tags#show</h1>
-  <p>Find me in app/views/tags/show.html.erb</p>
-</div>
+<header class="bg-white shadow-sm">
+  <div class="mx-auto px-4 py-4 sm:px-6 lg:px-8">
+    <h1 class="text-lg font-semibold leading-6 text-gray-900">Etiqueta: <%= @tag.name %></h1>
+  </div>
+</header>
+<main>
+  <div class="mx-auto sm:px-6 lg:px-8">
+    <div class="m-2">
+      <p>La etiqueta <b><%= @tag.name %></b> en los ultimos <b><%= DAYS_RANGE %> días</b> cuenta con un total de <b><%= number_with_delimiter(@total_videos, delimiter: ".")%></b> videos.
+    </div>
+  </div>
+</main>

@@ -7,7 +7,11 @@ class Tag < ApplicationRecord
   has_many :taggings, dependent: :destroy
   validates :name, uniqueness: true
 
-  # def self.ransackable_attributes(auth_object = nil)
-  #   ["created_at", "id", "id_value", "name", "taggings_count", "updated_at"]
-  # end
+  def list_videos
+    tag_list = name
+    result = Video.normal_range.tagged_with(tag_list, any: true).order(posted_at: :desc)
+    Video.where(id: result.map(&:id)).joins(:station)
+  end
+
+
 end

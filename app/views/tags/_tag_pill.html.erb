@@ -1,8 +1,8 @@
 <span class='inline-flex mb-2 items-center rounded-md bg-blue-100 px-2 py-2 text-s font-medium text-blue-700'>
-  <%#= link_to tag_path(tag_pill) do %>
+  <%= link_to tag_path(tag_pill) do %>
     <%= tag_pill.name %> 
     <span class='items-center m-1 rounded-md bg-white px-1 py-1 text-xs font-medium text-black'>
       <i class="fa-solid fa-tag"></i> <%= tag_pill.count %>
     </span>
-  <%# end %>
+  <% end %>
 </span>
