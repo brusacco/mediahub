@@ -102,3 +102,5 @@ rails generate controller Topics show
 rails g controller Tags show
 rails g controller Videos show
 rails g controller Stations show
+
+rails g model TopicStatDaily video_quantity:integer topic_date:date topic:references

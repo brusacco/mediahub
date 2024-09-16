@@ -7,7 +7,8 @@ class TopicsController < ApplicationController
 
     @tag_list = @topic.tags.map(&:name)
 
-    @videos = Video.normal_range.tagged_with(@tag_list, any: true).joins(:station).order(posted_at: :desc)
+    # @videos = Video.normal_range.tagged_with(@tag_list, any: true).joins(:station).order(posted_at: :desc)
+    @videos = @topic.list_videos
     @total_videos = @videos.size
 
     @word_occurrences = @videos.word_occurrences

@@ -1,0 +1,18 @@
+<div class="group relative rounded-md">
+  <div class="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-80">
+    <%= image_tag "/#{video.thumbnail_path}", size: 150, loading: 'lazy', onerror: 'this.onerror=null;this.src="https://via.placeholder.com/300x250";', class: 'h-full w-full object-cover object-center lg:h-full lg:w-full'%>
+  </div>
+  <div class="mt-4 flex justify-between">
+    <div>
+      <h3 class="px-1 text-sm">
+        <i class="fa-regular fa-circle-play"></i> <%= video.station.name %>
+      </h3>
+      <hr>
+      <p class="card-text">
+        <small class="text-muted px-1"><%= icon('fa-regular', 'calendar') %>
+          <%= video.posted_at.strftime('%d-%m-%Y') %>
+        </small>
+      </p>
+    </div>
+  </div>
+</div>

@@ -9,6 +9,27 @@ class HomeController < ApplicationController
   
   def index
     @videos = Video.where.not(transcription: nil).order(posted_at: :desc).limit(20)
+
+    @video_quantities = @topicos.map do |topic|
+      {
+        name: topic.name,
+        data: topic.topic_stat_dailies.normal_range.group_by_day(:topic_date).sum(:video_quantity)
+      }
+    end
+
+    @videos_last_day_topics = @topicos.joins(:topic_stat_dailies)
+                                      .where(topic_stat_dailies: { topic_date: 1.day.ago.. })
+                                      .group('topics.name').order('sum_topic_stat_dailies_video_quantity DESC').limit(10)
+                                      .sum('topic_stat_dailies.video_quantity')
+
+    # Tags Cloud
+    tags_list = []
+    @topicos.each do |topic|
+      tags_list << topic.tags.map(&:name)
+    end
+                                          
+    topics_videos = Video.order(posted_at: :desc).limit(100).tagged_with(tags_list.flatten.join(", "), any: true)
+    @word_occurrences = topics_videos.word_occurrences                                     
   end
 
   def deploy

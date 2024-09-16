@@ -1,0 +1,59 @@
+<%= form_with(url: home_merge_videos_path, method: :post) do |form| %>
+  <div class="px-4 sm:px-6 lg:px-8">
+    <div class="mt-8 flow-root">
+      <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+        <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+          <div class="flex justify-between mb-4">
+            <%= form.submit "Merge Selected Videos", class: "px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-400" %>
+          </div>
+          <table class="min-w-full divide-y divide-gray-300">
+            <thead>
+              <tr>
+                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Video</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Transcription</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Station</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Download</th>
+                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0">
+                  <span class="sr-only">Select</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+              <% @videos.each do |video| %>
+              <tr>
+                <td width="300" class="py-5 pl-4 pr-3 text-sm sm:pl-0">
+                  <div class="flex items-center">
+                    <div class="h-300 flex-shrink-0">
+                      <video width="300" height="240" controls>
+                        <source src="<%= video.public_path %>" type="video/mp4">
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-3 py-5 text-sm text-gray-500">
+                  <div class="text-gray-900"><%= video.transcription %></div>
+                </td>
+                <td class="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
+                  <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Active</span>
+                </td>
+                <td class="whitespace-nowrap px-3 py-5 text-sm text-gray-500"><%= video.posted_at %></td>
+                <td class="whitespace-nowrap px-3 py-5 text-sm text-gray-500"><%= video.station.name %></td>
+                <td class="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                  <a href="<%=video.public_path%>" target="_blank" class="text-indigo-600 hover:text-indigo-900">Download<span class="sr-only">, Lindsay Walton</span></a>
+                </td>
+                <td class="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                    <%= check_box_tag "selected_videos[]", video.path, false, class: "video-checkbox" %>
+                </td>
+              </tr>
+              <%end%>
+
+              <!-- More people... -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+<%end%>
