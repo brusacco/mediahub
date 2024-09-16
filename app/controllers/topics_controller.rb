@@ -12,6 +12,7 @@ class TopicsController < ApplicationController
     @total_videos = @videos.size
 
     @word_occurrences = @videos.word_occurrences
+    @bigram_occurrences = @videos.bigram_occurrences
 
     @all_videos = Video.normal_range.joins(:station).order(posted_at: :desc)
 
