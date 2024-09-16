@@ -11,7 +11,7 @@ class Video < ApplicationRecord
 
   scope :no_transcription, -> { where(transcription: nil) }
   scope :no_thumbnail, -> { where(thumbnail_path: nil) }
-  scope :normal_range, -> { where(posted_at: DAYS_RANGE.days.ago..) }
+  scope :normal_range, -> { where(posted_at: 120.days.ago..) }
 
   def directories
     location.split('T')[0].split('-')
@@ -24,6 +24,7 @@ class Video < ApplicationRecord
       words = video.transcription.gsub(/[[:punct:]]/, ' ').split
       words.each do |word|
         cleaned_word = word.downcase
+        next if STOP_WORDS.include?(cleaned_word)
         next if cleaned_word.length <= 2
         next if ['https'].include?(cleaned_word)
 
