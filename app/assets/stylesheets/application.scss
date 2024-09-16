@@ -1,15 +1,39 @@
-/*
- * This is a manifest file that'll be compiled into application.css, which will include all the files
- * listed below.
- *
- * Any CSS (and SCSS, if configured) file within this directory, lib/assets/stylesheets, or any plugin's
- * vendor/assets/stylesheets directory can be referenced here using a relative path.
- *
- * You're free to add application-wide styles to this file and they'll appear at the bottom of the
- * compiled file so the styles you add here take precedence over styles defined in any other CSS
- * files in this directory. Styles in this file should be added after the last require_* statement.
- * It is generally better to create a new file per style scope.
- *
- *= require_tree .
- *= require_self
- */
+@import "font-awesome";
+
+a:link { text-decoration: none; }
+a:visited { text-decoration: none; }
+a:hover { text-decoration: none; }
+a:active { text-decoration: none; }
+
+.css1 { font-size: 1.0em; color: lightpink; }
+.css2 { font-size: 1.2em; color: lightsalmon}
+.css3 { font-size: 1.4em; color: lightcoral}
+.css4 { font-size: 1.6em; color: red}
+
+ul.cloud {
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  line-height: 2.5rem;
+}
+ul.cloud li {
+  // color: #a33;
+  display: block;
+  font-size: 1.5rem;
+  padding: 0.125rem 0.25rem;
+  text-decoration: none;
+  position: relative;
+}
+ul.cloud li[data-weight="1"] { font-size: calc(1 * 0.25rem + 0.5rem); }
+ul.cloud li[data-weight="2"] { font-size: calc(2 * 0.25rem + 0.5rem); }
+ul.cloud li[data-weight="3"] { font-size: calc(3 * 0.25rem + 0.5rem); }
+ul.cloud li[data-weight="4"] { font-size: calc(4 * 0.25rem + 0.5rem); }
+ul.cloud li[data-weight="5"] { font-size: calc(5 * 0.25rem + 0.5rem); }
+ul.cloud li[data-weight="6"] { font-size: calc(6 * 0.25rem + 0.5rem); }
+ul.cloud li[data-weight="7"] { font-size: calc(7 * 0.25rem + 0.5rem); }
+ul.cloud li[data-weight="8"] { font-size: calc(8 * 0.25rem + 0.5rem); }
+ul.cloud li[data-weight="9"] { font-size: calc(9 * 0.25rem + 0.5rem); }
+ul.cloud li[data-weight="10"] { font-size: calc(10 * 0.25rem + 0.5rem); }

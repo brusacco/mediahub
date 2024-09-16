@@ -6,10 +6,66 @@
 <main>
   <div class="mx-auto py-4 sm:px-6 lg:px-8">
     <%= render partial: "tags/tag_entry", collection: @topic.tags %>
-  </div>
 
-  <div class="ms-6">
-    <p class="text-xl leading-8">El tópico <b><%=@topic.name%></b> en los ultimos <b><%=DAYS_RANGE%> días</b> 
-    cuenta con un total de <b><%=number_with_delimiter(@total_videos, delimiter: ".")%></b> notas.</p>
+    <div class="m-2">
+      <p class="text-xl leading-8">El tópico <b><%=@topic.name%></b> en los ultimos <b><%=DAYS_RANGE%> días</b> 
+      cuenta con un total de <b><%=number_with_delimiter(@total_videos, delimiter: ".")%></b> notas.</p>
+    </div>
+    <hr>
+
+    <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8  lg:px-8"></div>
+      <h3>Análisis de los últimos <%=DAYS_RANGE%> días</h3>
+      <%= column_chart @videos.group_by_day(:posted_at).count('*'), xtitle: "Fecha", ytitle: "Cant. Videos", label: "Videos", colors: ['blue'] %>
+    </div>
+    <hr>
+
+    <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8">
+      <div class="flex flex-wrap -mx-2">
+        <div class="w-full sm:w-1/2 px-2 mb-4 sm:mb-0">
+          <div class="overflow-hidden bg-white shadow sm:rounded-lg">
+            <h3 class="mx-5 my-5 font-bold tracking-tight text-gray-900">Cantidad de Videos por estacion</h3>
+            <%= pie_chart @videos.group("stations.name").count('*'), donut: true %>
+          </div>
+        </div>
+        <div class="w-full sm:w-1/2 px-2 mb-4 sm:mb-0">
+          <div class="overflow-hidden bg-white shadow sm:rounded-lg">
+            <h3 class="mx-5 my-5 font-bold tracking-tight text-gray-900">Cantidad de Videos por Tag Relacionados</h3>
+            <%= pie_chart @tags_count, donut: true %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+    <%= render partial: 'stations/station', 
+                locals: { stations: @videos.group("stations.name").count('*').sort_by { |station, count| -count }.take(10), 
+                title: 'Las estaciones que mas han mencionado' } %>
+
+    <hr>
+    <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8">
+      <%= render partial: 'videos/table', locals: { videos: @videos, title: "Últimos Videos sobre #{@topic.name}" } %>
+    </div>
+
+    <div class="overflow-hidden bg-white shadow sm:rounded-lg">
+      <h2 class="text-2xl mx-5 my-5 font-bold tracking-tight text-gray-900">Nube de palabras de Videos</h2>
+      <div class="mt-2 mb-2 px-30 py-10 sm:p-6">
+        <% min_max = find_max_and_min_occurrences(@word_occurrences) %>
+        <ul class="cloud">
+          <% @word_occurrences.shuffle { |a, b| a[1] <=> b[1] }.each do |word, value| %>
+            <li data-weight="<%= normalize_to_scale(value, min_max[:max], min_max[:min]) %>"><%= word %></li>
+          <%end%>
+        </ul>
+      </div>
+    </div>
+
+    <% if @tags.any? %>
+      <hr>
+      <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8 no-print">
+        <h2 class="text-2xl font-bold tracking-tight text-gray-900">Aparicion de Etiquetas:</h2>
+        <%= render partial: "tags/tag_pill", collection: @tags, cached: true %>
+        <p><small class="text-muted px-1">*Cantidad de veces que aparecen las etiquetas en los videos</small></p>
+      </div>
+    <%end%>
+
   </div>
 </main>

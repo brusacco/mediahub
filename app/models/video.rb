@@ -11,10 +11,30 @@ class Video < ApplicationRecord
 
   scope :no_transcription, -> { where(transcription: nil) }
   scope :no_thumbnail, -> { where(thumbnail_path: nil) }
-  scope :normal_range, -> { where(posted_at: DAYS_RANGE.days.ago..) }
+  scope :normal_range, -> { where(posted_at: 120.days.ago..) }
 
   def directories
     location.split('T')[0].split('-')
+  end
+
+  def self.word_occurrences(limit = 100)
+    word_occurrences = Hash.new(0)
+
+    all.find_each do |video|
+      words = video.transcription.gsub(/[[:punct:]]/, ' ').split
+      words.each do |word|
+        cleaned_word = word.downcase
+        next if cleaned_word.length <= 2
+        next if ['https'].include?(cleaned_word)
+
+        word_occurrences[cleaned_word] += 1
+      end
+    end
+
+    word_occurrences.select { |_word, count| count > 1 }
+                    .sort_by { |_k, v| v }
+                    .reverse
+                    .take(limit)
   end
 
   def generate_thumbnail

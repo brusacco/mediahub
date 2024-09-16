@@ -1,0 +1,41 @@
+<link href="https://cdn.datatables.net/v/dt/jq-3.7.0/dt-2.1.6/datatables.min.css" rel="stylesheet">
+<script src="https://cdn.datatables.net/v/dt/jq-3.7.0/dt-2.1.6/datatables.min.js"></script>
+
+<h2 class="text-2xl font-bold tracking-tight text-gray-900"><%=title%></h2>
+<table id="videos" class="min-w-full divide-y divide-gray-300">
+  <thead>
+    <tr>
+      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Fecha</th>
+      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Imagen</th>
+      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Transcripcion</th>
+      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Etiquetas</th>
+      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Estacion</th>
+    </tr>
+  </thead>
+  <tbody class="bg-white">
+    <% videos.each do |video| %>
+      <tr class="even:bg-gray-50">
+        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500" data-sort="<%= video.posted_at.strftime("%Y%m%d%H%M%s") %>"><%= video.posted_at.strftime("%d/%m/%Y") %></td>
+        <td class="px-3 py-4 text-sm text-gray-500"><%= image_tag "/#{video.thumbnail_path}", size: 200, loading: 'lazy', onerror: 'this.onerror=null;this.src="https://via.placeholder.com/300x250";' %></td>
+        <td class="px-3 py-4 text-gray-500"><%= video.transcription %> <i class="fa-solid fa-link"></i></td>
+        <td class="px-3 py-4 text-xs text-gray-500"><%= video.tag_list %></td>
+        <td class="whitespace-nowrap px-3 py-4 text-xs text-gray-500"><%= video.station.name %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<script>
+  // document.addEventListener('turbo:load', function () {
+  $(document).ready( function () {
+    var datatablesLanguage = "/datatables_locales/es-ES.json" 
+    new DataTable('#videos', {
+      order: [[0, 'desc']],
+      language: {
+        url: datatablesLanguage,
+      },
+      "pageLength": 25,
+      "lengthChange": false
+    });
+  });
+</script>

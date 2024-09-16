@@ -100,3 +100,5 @@ rails generate model UserTopic user:references topic:references
 
 rails generate controller Topics show
 rails g controller Tags show
+rails g controller Videos show
+rails g controller Stations show
