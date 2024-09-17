@@ -85,18 +85,22 @@ class Video < ApplicationRecord
   private
 
   def remove_thumbnail
-    FileUtils.rm_rf(path.sub(/\.mp4\z/, '.png'))
+    return if thumbnail_path.blank?
+
+    FileUtils.rm_rf(thumbnail_path)
   end
 
   def cleanup_files
+    return if path.blank?
+
     FileUtils.rm_rf(path)
     remove_thumbnail
   end
 
   # For TopicStatDaily
   scope :tagged_date, ->(date) { where(['videos.posted_at >= ? AND videos.posted_at <= ?', date, date + 1]) }
-  
+
   def self.tagged_on_video_quantity(tag, date)
     tagged_with(tag, any: true).tagged_date(date).size
-  end  
+  end
 end
