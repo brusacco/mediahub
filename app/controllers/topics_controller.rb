@@ -7,20 +7,11 @@ class TopicsController < ApplicationController
 
     @tag_list = @topic.tags.map(&:name)
 
-    # @videos = Video.normal_range.tagged_with(@tag_list, any: true).joins(:station).order(posted_at: :desc)
     @videos = @topic.list_videos
     @total_videos = @videos.size
 
     @word_occurrences = @videos.word_occurrences
     @bigram_occurrences = @videos.bigram_occurrences
-
-    @all_videos = Video.normal_range.joins(:station).order(posted_at: :desc)
-
-    if @videos.any?
-      total_count = @total_videos + @all_videos.size
-      @topic_percentage = (Float(@total_videos) / total_count * 100).round(0)
-      @all_percentage = (Float(@all_videos.size) / total_count * 100).round(0)
-    end
 
     @tags = @videos.tag_counts_on(:tags).order(count: :desc).limit(20)
     @tags_count = {}
