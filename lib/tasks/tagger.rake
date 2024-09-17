@@ -17,6 +17,6 @@ task tagger: :environment do
   rescue StandardError => e
     video.update(tag_list: nil)
     puts e.message
-    retry
+    next
   end
 end
