@@ -27,7 +27,7 @@ ActiveAdmin.register Video do
         video.transcription
       end
     end
-    list_column :tag_list
+    list_column :tags
     actions
   end
 
