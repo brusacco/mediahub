@@ -3,6 +3,5 @@ class VideosController < ApplicationController
 
   def show
     @clip = Video.find(params[:id])
-    @tag_list = @clip.tags.map(&:name)
   end
 end
