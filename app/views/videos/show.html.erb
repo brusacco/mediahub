@@ -15,11 +15,11 @@
         </tr>
         <tr class="border-t">
           <td class="px-4 py-2">Estación</td>
-          <td class="px-4 py-2">SNT</td>
+          <td class="px-4 py-2"><%= @clip.station.name %></td>
         </tr>
         <tr class="border-t">
           <td class="px-4 py-2">Transcripcion</td>
-          <td class="px-4 py-2">Cada uno tiene su ritual, un momento especial de conexión...</td>
+          <td class="px-4 py-2"><%= @clip.transcription %></td>
         </tr>
         <tr class="border-t">
           <td class="px-4 py-2">Tags</td>
@@ -29,7 +29,7 @@
           <td class="px-4 py-2">Clip</td>
           <td class="px-4 py-2">
             <video class="w-full max-w-md" controls>
-              <source src="<%= @clip.public_path %>" type="video/mp4">
+              <source src="<%= @clip_path %>" type="video/mp4">
               Your browser does not support the video tag.
             </video>
           </td>
