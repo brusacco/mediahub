@@ -16,7 +16,9 @@
     <% videos.each do |video| %>
       <tr class="even:bg-gray-50">
         <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500" data-sort="<%= video.posted_at.strftime("%Y%m%d%H%M%s") %>"><%= video.posted_at.strftime("%d/%m/%Y") %></td>
-        <td class="px-3 py-4 text-sm text-gray-500"><%= image_tag "/#{video.thumbnail_path}", size: 200, loading: 'lazy', onerror: 'this.onerror=null;this.src="https://via.placeholder.com/300x250";' %></td>
+        <td class="px-3 py-4 text-sm text-gray-500">
+          <%= link_to image_tag("/#{video.thumbnail_path}", size: 200, loading: 'lazy', onerror: 'this.onerror=null;this.src="https://via.placeholder.com/300x250";'), video_path(video), target: '_blank' %>
+        </td>
         <td class="px-3 py-4 text-gray-500"><%= video.transcription %> <i class="fa-solid fa-link"></i></td>
         <td class="px-3 py-4 text-xs text-gray-500"><%= video.tag_list %></td>
         <td class="whitespace-nowrap px-3 py-4 text-xs text-gray-500"><%= video.station.name %></td>

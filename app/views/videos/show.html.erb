@@ -1,4 +1,41 @@
-<div>
-  <h1 class="font-bold text-4xl">Videos#show</h1>
-  <p>Find me in app/views/videos/show.html.erb</p>
+<!-- app/views/videos/show.html.erb -->
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold mb-6">Detalles del Clip</h1>
+  <div class="overflow-x-auto">
+    <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+      <thead class="bg-gray-800 text-white">
+        <tr>
+          <th class="text-left px-4 py-2">Titulo</th>
+          <th class="text-left px-4 py-2">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-t">
+          <td class="px-4 py-2">Fecha</td>
+          <td class="px-4 py-2"><%= @clip.posted_at.strftime("%d-%m-%Y %H:%M:%S") %></td>
+        </tr>
+        <tr class="border-t">
+          <td class="px-4 py-2">Estación</td>
+          <td class="px-4 py-2">SNT</td>
+        </tr>
+        <tr class="border-t">
+          <td class="px-4 py-2">Transcripcion</td>
+          <td class="px-4 py-2">Cada uno tiene su ritual, un momento especial de conexión...</td>
+        </tr>
+        <tr class="border-t">
+          <td class="px-4 py-2">Tags</td>
+          <td class="px-4 py-2"><%= @clip.tag_list %></td>
+        </tr>
+        <tr class="border-t">
+          <td class="px-4 py-2">Clip</td>
+          <td class="px-4 py-2">
+            <video class="w-full max-w-md" controls>
+              <source src="<%= @clip.public_path %>" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </div>

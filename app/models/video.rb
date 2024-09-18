@@ -11,7 +11,7 @@ class Video < ApplicationRecord
 
   scope :no_transcription, -> { where(transcription: nil) }
   scope :no_thumbnail, -> { where(thumbnail_path: nil) }
-  scope :normal_range, -> { where(posted_at: DAYS_RANGE.days.ago..) }
+  scope :normal_range, -> { where(posted_at: 120.days.ago..) }
 
   def directories
     location.split('T')[0].split('-')
