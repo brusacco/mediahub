@@ -3,7 +3,7 @@
 desc 'Guardar valores diarios por topico'
 task topic_stat_daily: :environment do
   topics = Topic.where(status: true)
-  var_date = 120.days.ago.to_date..Date.today
+  var_date = 7.days.ago.to_date..Date.today
 
   topics.each do |topic|
     puts "TOPICO: #{topic.name}"
