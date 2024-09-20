@@ -5,8 +5,7 @@ require 'selenium-webdriver'
 
 namespace :stream do
   desc 'Process video stream for a station'
-  task :update_stream_url, [:station_id] => :environment do
-    [t, args]
+  task :update_stream_url, [:station_id] => :environment do |_t, args|
     # Set up Selenium with ChromeDriver
     options = Selenium::WebDriver::Chrome::Options.new
     options.add_argument('--headless') # Run Chrome in headless mode (no GUI)
