@@ -51,6 +51,9 @@ namespace :stream do
             # Update stream URL by invoking the stream:update_stream_url task
             Rake::Task['stream:update_stream_url'].reenable
             Rake::Task['stream:update_stream_url'].invoke(station.id)
+
+            # Reload the station to get the updated stream_url
+            station.reload
           end
         rescue => e
           Rails.logger.error("Thread error for station #{station.id}: #{e.message}")
