@@ -43,12 +43,11 @@ namespace :stream do
     driver.manage.timeouts.implicit_wait = 20 # 10 seconds to find elements
     driver.manage.timeouts.script_timeout = 60 # 30 seconds for scripts
 
-    station = Station.find(args[:station_id])
+    @current_station = Station.find(args[:station_id])
     puts '---------------------------------------------------------'
-    puts "Processing station stream URL: #{station.name}"
-    @current_station = station
+    puts "Processing station stream URL: #{@current_station.name}"
     # Navigate to the desired webpage
-    driver.navigate.to(station.stream_source)
+    driver.navigate.to(@current_station.stream_source)
 
     # Close the browser after extraction
     driver.quit
