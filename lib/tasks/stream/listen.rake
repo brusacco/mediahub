@@ -25,7 +25,7 @@ namespace :stream do
       threads << Thread.new do
         begin
           loop do
-            puts "Processing station #{station.name} (ID: #{station.id})"
+            puts "Connecting to station #{station.name} (ID: #{station.id})"
             # Define the base target directory
             base_directory = "public/videos/#{station.directory}/temp/"
 
