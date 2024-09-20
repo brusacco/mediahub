@@ -24,34 +24,34 @@ namespace :stream do
     Station.find_each do |station|
       threads << Thread.new do
         begin
-          puts "Processing station #{station.name} (ID: #{station.id})"
-          # Define the base target directory
-          base_directory = "public/videos/#{station.directory}/temp/"
+          loop do
+            puts "Processing station #{station.name} (ID: #{station.id})"
+            # Define the base target directory
+            base_directory = "public/videos/#{station.directory}/temp/"
 
-          # Ensure the directory exists
-          FileUtils.mkdir_p(base_directory)
+            # Ensure the directory exists
+            FileUtils.mkdir_p(base_directory)
 
-          # Update station status to connected while processing
-          station.update(stream_status: :connected)
+            # Update station status to connected while processing
+            station.update(stream_status: :connected)
 
-          # Construct the ffmpeg command with station's stream_url and target directory
-          command = "ffmpeg -i '#{station.stream_url}' -vf scale=800x600 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 -preset veryfast '#{base_directory}/%Y-%m-%dT%H_%M_%S.mp4'"
+            # Construct the ffmpeg command with station's stream_url and target directory
+            command = "ffmpeg -i '#{station.stream_url}' -vf scale=800x600 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 -preset veryfast '#{base_directory}/%Y-%m-%dT%H_%M_%S.mp4'"
 
-          # Execute the command
-          stdout, stderr, status = Open3.capture3(command)
+            # Execute the command
+            stdout, stderr, status = Open3.capture3(command)
 
-          # If ffmpeg fails or ends this station is disconnected
-          station.update(stream_status: :disconnected)
+            # If ffmpeg fails or ends this station is disconnected
+            station.update(stream_status: :disconnected)
+            puts "Station #{station.name} disconnected, retrying in 5 seconds..."
+            sleep 5
 
-          if station.stream_source.present?
+            next if station.stream_source.blank?
+
             # Update stream URL by invoking the stream:update_stream_url task
             Rake::Task['stream:update_stream_url'].reenable
             Rake::Task['stream:update_stream_url'].invoke(station.id)
           end
-
-          # Log the output and errors
-          Rails.logger.info("Processing station #{station.id}: #{stdout}")
-          Rails.logger.error("Error processing station #{station.id}: #{stderr}") unless status.success?
         rescue => e
           Rails.logger.error("Thread error for station #{station.id}: #{e.message}")
           station.update(status: :disconnected)
