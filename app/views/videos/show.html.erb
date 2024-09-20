@@ -15,7 +15,7 @@
         </tr>
         <tr class="border-t">
           <td class="px-4 py-2">Estación</td>
-          <td class="px-4 py-2"><%= @clip.station.name %></td>
+          <td class="px-4 py-2"><%= link_to @clip.station.name, station_path(@clip.station), class: 'font-medium text-blue-600 dark:text-blue-500 hover:underline' %></td>
         </tr>
         <tr class="border-t">
           <td class="px-4 py-2">Transcripcion</td>
