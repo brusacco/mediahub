@@ -45,7 +45,7 @@ namespace :stream do
 
     station = Station.find(args[:station_id])
     puts '---------------------------------------------------------'
-    puts "Processing station: #{station.name}"
+    puts "Processing station stream URL: #{station.name}"
     @current_station = station
     # Navigate to the desired webpage
     driver.navigate.to(station.stream_source)
