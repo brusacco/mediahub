@@ -3,6 +3,9 @@
 ActiveAdmin.register Video do
   permit_params :location, :posted_at, :transcription, :posted_at, :station_id
 
+  # Set the default sort order for the index page
+  config.sort_order = 'posted_at_desc'
+
   filter :station, label: 'Estación'
   filter :transcription_cont, label: 'Transcripción'
   filter :tags, label: 'Etiquetas'
