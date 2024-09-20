@@ -31,9 +31,11 @@ namespace :stream do
           # Ensure the directory exists
           FileUtils.mkdir_p(base_directory)
 
-          # Update stream URL by invoking the stream:update_stream_url task
-          Rake::Task['stream:update_stream_url'].reenable
-          Rake::Task['stream:update_stream_url'].invoke(station.id)
+          if station.stream_source.present?
+            # Update stream URL by invoking the stream:update_stream_url task
+            Rake::Task['stream:update_stream_url'].reenable
+            Rake::Task['stream:update_stream_url'].invoke(station.id)
+          end
 
           # Update station status to connected while processing
           station.update(stream_status: :connected)
