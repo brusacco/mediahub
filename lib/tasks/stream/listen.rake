@@ -20,8 +20,11 @@ namespace :stream do
       end
     end
 
+    ENV['RAILS_ENV'] = 'production'
+    Rake::Task['update_streams_url'].invoke
+
     # Iterate through each Station record
-    Station.where(stream_status: :disconnected).find_each do |station|
+    Station.find_each do |station|
       threads << Thread.new do
         begin
           puts "Processing station #{station.name} (ID: #{station.id})"
@@ -30,12 +33,6 @@ namespace :stream do
 
           # Ensure the directory exists
           FileUtils.mkdir_p(base_directory)
-
-          if station.stream_source.present?
-            # Update stream URL by invoking the stream:update_stream_url task
-            Rake::Task['stream:update_stream_url'].reenable
-            Rake::Task['stream:update_stream_url'].invoke(station.id)
-          end
 
           # Update station status to connected while processing
           station.update(stream_status: :connected)
@@ -48,6 +45,12 @@ namespace :stream do
 
           # If ffmpeg fails or ends this station is disconnected
           station.update(stream_status: :disconnected)
+
+          if station.stream_source.present?
+            # Update stream URL by invoking the stream:update_stream_url task
+            Rake::Task['stream:update_stream_url'].reenable
+            Rake::Task['stream:update_stream_url'].invoke(station.id)
+          end
 
           # Log the output and errors
           Rails.logger.info("Processing station #{station.id}: #{stdout}")
