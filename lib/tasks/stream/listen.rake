@@ -20,9 +20,6 @@ namespace :stream do
       end
     end
 
-    ENV['RAILS_ENV'] = 'production'
-    Rake::Task['stream:update_stream_urls'].invoke
-
     # Iterate through each Station record
     Station.find_each do |station|
       threads << Thread.new do
