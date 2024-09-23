@@ -50,6 +50,8 @@ class Video < ApplicationRecord
     word_occurrences = Hash.new(0)
 
     all.find_each do |video|
+      next if video.transcription.nil?
+      
       words = video.transcription.gsub(/[[:punct:]]/, ' ').split
       words.each do |word|
         cleaned_word = word.downcase
