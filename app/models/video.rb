@@ -12,7 +12,7 @@ class Video < ApplicationRecord
   scope :no_transcription, -> { where(transcription: nil) }
   scope :has_transcription, -> { where.not(transcription: nil) }
   scope :no_thumbnail, -> { where(thumbnail_path: nil) }
-  scope :normal_range, -> { where(posted_at: 120.days.ago..) }
+  scope :normal_range, -> { where(posted_at: DAYS_RANGE.days.ago..) }
 
   def directories
     location.split('T')[0].split('-')
@@ -23,7 +23,7 @@ class Video < ApplicationRecord
 
     all.find_each do |video|
       next if video.transcription.nil?
-      
+
       words = video.transcription.gsub(/[[:punct:]]/, '').split
       bigrams = words.each_cons(2).map { |word1, word2| "#{word1.downcase} #{word2.downcase}" }
       bigrams.each do |bigram|
