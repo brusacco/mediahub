@@ -10,6 +10,7 @@ class Video < ApplicationRecord
   after_destroy :cleanup_files
 
   scope :no_transcription, -> { where(transcription: nil) }
+  scope :has_transcription, -> { where.not(transcription: nil) }
   scope :no_thumbnail, -> { where(thumbnail_path: nil) }
   scope :normal_range, -> { where(posted_at: DAYS_RANGE.days.ago..) }
 

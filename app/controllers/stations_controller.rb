@@ -8,7 +8,7 @@ class StationsController < ApplicationController
       @station = Station.find(params[:id])
     end
 
-    @clips = Video.normal_range.where(station: @station)
+    @clips = Video.has_transcription.normal_range.where(station: @station)
     @total_clips = @clips.size
 
     @word_occurrences = @clips.word_occurrences
