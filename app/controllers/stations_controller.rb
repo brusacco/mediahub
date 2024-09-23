@@ -10,6 +10,13 @@ class StationsController < ApplicationController
 
     @clips = Video.normal_range.where(station: @station)
     @total_clips = @clips.size
+
+    @word_occurrences = @clips.word_occurrences
+    @bigram_occurrences = @clips.bigram_occurrences
+
+    @tags = @clips.tag_counts_on(:tags).order(count: :desc).limit(20)
+    @tags_count = {}
+    @tags.each { |n| @tags_count[n.name] = n.count }    
   end
 
 
