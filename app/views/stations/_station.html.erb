@@ -7,8 +7,8 @@
         <div class="flex w-full items-center justify-between space-x-6 p-6">
           <div class="flex-1 truncate">
             <div class="flex items-center space-x-3">
-              <h3 class="truncate text-sm font-medium text-gray-900">
-                <%= link_to station.name, station_path(station.id), class: 'font-medium text-blue-600 dark:text-blue-500 hover:underline', target: '_blank' %>
+              <h3 class="truncate font-bold text-gray-900">
+                <%= link_to station.name, station_path(station.id), class: 'text-xl text-blue-600 dark:text-blue-500 hover:underline', target: '_blank' %>
               </h3>
             </div>
             <p class="mt-1 truncate text-sm text-gray-500"><%= station_data[:count] %> clips</p>

@@ -43,7 +43,7 @@
                                   .count('*')
                                   .sort_by { |_, count| -count }
                                   .take(10)
-                                  .map { |(station), count| { station: Station.find_by(name: station), count: count } },
+                                  .map { |station, count| { station: Station.find_by(name: station), count: count } },
                 title: 'Las estaciones que más han mencionado este Tópico fueron:' } %>
 
     <hr>
