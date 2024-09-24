@@ -46,6 +46,8 @@ namespace :stream do
     driver.manage.timeouts.script_timeout = 60 # 30 seconds for scripts
 
     Station.where.not(stream_source: nil).find_each do |station|
+      next if station.stream_source.blank?
+
       puts '---------------------------------------------------------'
       puts "Processing station: #{station.name}"
       @current_station = station
