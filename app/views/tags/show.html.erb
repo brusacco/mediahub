@@ -37,8 +37,13 @@
     <hr>
 
     <%= render partial: 'stations/station', 
-                locals: { stations: @videos.group("stations.name").count('*').sort_by { |station, count| -count }.take(10), 
-                title: 'Las estaciones que mas han mencionado' } %>
+              locals: { 
+                stations: @videos.group("stations.id, stations.name")
+                                  .count('*')
+                                  .sort_by { |_, count| -count }
+                                  .take(10)
+                                  .map { |station, count| { station: Station.find_by(name: station), count: count } },
+                title: 'Las estaciones que más han mencionado esta Etiqueta fueron:' } %>
 
     <hr>
     <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8">

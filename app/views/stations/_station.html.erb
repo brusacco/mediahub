@@ -1,18 +1,19 @@
 <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8">
-  <h2 class="text-2xl font-bold tracking-tight text-gray-900">Las estaciones que mas han mencionado esta etiqueta fueron:</h2>
+  <h2 class="text-2xl font-bold tracking-tight text-gray-900"><%= title %></h2>
   <ul role="list" class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-    <% stations.each do |station, count| %>
+    <% stations.each do |station_data| %>
+      <% station = station_data[:station] %>
       <li class="col-span-1 divide-y divide-gray-200 rounded-lg bg-white shadow">
         <div class="flex w-full items-center justify-between space-x-6 p-6">
           <div class="flex-1 truncate">
             <div class="flex items-center space-x-3">
               <h3 class="truncate text-sm font-medium text-gray-900">
-                <%= link_to station, station_path(name: station), class: 'font-medium text-blue-600 dark:text-blue-500 hover:underline' %>
+                <%= link_to station.name, station_path(station.id), class: 'font-medium text-blue-600 dark:text-blue-500 hover:underline', target: '_blank' %>
               </h3>
             </div>
-            <p class="mt-1 truncate text-sm text-gray-500"><%= count %> clips</p>
+            <p class="mt-1 truncate text-sm text-gray-500"><%= station_data[:count] %> clips</p>
           </div>
-          <img class="h-10 w-10 flex-shrink-0 rounded-full bg-gray-300" src="https://via.placeholder.com/300x300" alt="">
+          <%= image_tag station.logo, class: 'h-12 w-12 flex-shrink-0 rounded-full bg-gray-300', loading: 'lazy' if station.logo.attached? %>      
         </div>
       </li>
     <% end %>
