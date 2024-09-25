@@ -87,7 +87,7 @@ class Video < ApplicationRecord
       Rails.logger.error("Error generating thumbnail for #{location}: #{stderr}")
     end
 
-    # Run ffmpeg command to generate thumbnail
+    # Run ffmpeg command to generate BIG thumbnail
     command = "ffmpeg -y -i #{path} -ss 00:00:01 -frames:v 1 #{big_thumbnail_path}"
     _stdout, _stderr, _status = Open3.capture3(command)
   end
