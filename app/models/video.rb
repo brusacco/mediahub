@@ -53,7 +53,7 @@ class Video < ApplicationRecord
 
     all.find_each do |video|
       next if video.transcription.nil?
-      
+
       words = video.transcription.gsub(/[[:punct:]]/, ' ').split
       words.each do |word|
         cleaned_word = word.downcase
@@ -85,6 +85,10 @@ class Video < ApplicationRecord
     else
       Rails.logger.error("Error generating thumbnail for #{location}: #{stderr}")
     end
+
+    # Run ffmpeg command to generate thumbnail
+    command = "ffmpeg -y -i #{path} -ss 00:00:01 -frames:v 1 #{thumbnail_path}"
+    _stdout, _stderr, _status = Open3.capture3(command)
   end
 
   private
