@@ -21,7 +21,7 @@ namespace :stream do
     end
 
     # Iterate through each Station record
-    Station.find_each do |station|
+    Station.where(stream_status: :disconnected).find_each do |station|
       threads << Thread.new do
         begin
           loop do
