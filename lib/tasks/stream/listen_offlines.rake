@@ -4,7 +4,7 @@
 
 namespace :stream do # rubocop:disable Metrics/BlockLength
   desc 'Process video streams for each station'
-  task listen: :environment do # rubocop:disable Metrics/BlockLength
+  task listen_offlines: :environment do # rubocop:disable Metrics/BlockLength
     require 'open3'
 
     # Create an array to keep track of threads
@@ -21,7 +21,7 @@ namespace :stream do # rubocop:disable Metrics/BlockLength
     end
 
     # Iterate through each Station record
-    Station.find_each do |station|
+    Station.where(status: :disconnected).find_each do |station|
       threads << Thread.new do
         begin
           loop do

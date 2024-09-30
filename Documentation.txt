@@ -104,3 +104,7 @@ rails g controller Videos show
 rails g controller Stations show
 
 rails g model TopicStatDaily video_quantity:integer topic_date:date topic:references
+
+{
+    "url": "https://edge.streann.com/megacadena1/megacadena1/playlist.m3u8?auth=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJhbm9ueW1vdXMiLCJpcCI6IjE4MS4xMjAuMTQ2LjE5OCIsImV4cCI6MTcyNzcyNDU2NSwicmlkIjoiNWUzNDRhNGQyY2RjYmUxYzQ5ZmQ4NTZjIiwia2V5Ijoia2V5MSIsImNpZCI6IjVlNjJiOTZlMmNkY2ZhYzJkZDg4ODVkZCJ9.GXLR2KC04wIASgdg9h28x_yHS0D_i_I2UJCmGtGqtO0"
+}
