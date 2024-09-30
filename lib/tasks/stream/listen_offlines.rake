@@ -21,7 +21,7 @@ namespace :stream do # rubocop:disable Metrics/BlockLength
     end
 
     # Iterate through each Station record
-    Station.where(status: :disconnected).find_each do |station|
+    Station.where(stream_status: :disconnected).find_each do |station|
       threads << Thread.new do
         begin
           loop do
@@ -58,7 +58,7 @@ namespace :stream do # rubocop:disable Metrics/BlockLength
           end
         rescue => e
           Rails.logger.error("Thread error for station #{station.id}: #{e.message}")
-          station.update(status: :disconnected)
+          station.update(stream_status: :disconnected)
         end
       end
     end

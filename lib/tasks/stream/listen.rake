@@ -58,7 +58,7 @@ namespace :stream do # rubocop:disable Metrics/BlockLength
           end
         rescue => e
           Rails.logger.error("Thread error for station #{station.id}: #{e.message}")
-          station.update(status: :disconnected)
+          station.update(stream_status: :disconnected)
         end
       end
     end
