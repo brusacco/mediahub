@@ -21,15 +21,15 @@
           <td class="px-4 py-2">Transcripcion</td>
           <td class="px-4 py-2">
             <% if @clip.tag_list.present? %>
-              <%= highlight(@clip.transcription, Regexp.union(@clip.tag_list.map { |tag| /\b(#{Regexp.escape(tag)})\b/i })) -%>
+              <%= highlight(@clip.transcription, @clip.all_tags_boundarys) -%>
             <% else %>
               <%= @clip.transcription %>
             <% end %>
           </td>
         </tr>
         <tr class="border-t">
-          <td class="px-4 py-2">Tags</td>
-          <td class="px-4 py-2"><%= @clip.tag_list %></td>
+          <td class="px-4 py-2">Tags y Variaciones</td>
+          <td class="px-4 py-2"><%= @clip.all_tags.join(', ') %></td>
         </tr>
         <tr class="border-t">
           <td class="px-4 py-2">Clip</td>
