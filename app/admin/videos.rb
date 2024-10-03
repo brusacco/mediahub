@@ -54,7 +54,9 @@ ActiveAdmin.register Video do
         image_tag "/#{video.thumbnail_path}", width: 500 unless video.thumbnail_path.nil?
       end
       row :public_path
-      row :transcription
+      row 'Transcripción' do |video|
+        highlight(video.transcription, video.all_tags_boundarys, highlighter: '<span class="highlight">\1</span>')
+      end
       row :tag_list
       row :created_at
       row :updated_at
