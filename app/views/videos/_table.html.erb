@@ -21,7 +21,7 @@
         </td>
         <td class="px-3 py-4 text-gray-500">     
           <% if video.tag_list.present? %>
-            <%= highlight(video.transcription, video.tag_list) -%>
+            <%= highlight(video.transcription, /\b(#{video.tag_list})\b/i) -%>
           <% else %>
             <%= video.transcription %>
           <% end %>

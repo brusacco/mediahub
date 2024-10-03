@@ -21,7 +21,7 @@
           <td class="px-4 py-2">Transcripcion</td>
           <td class="px-4 py-2">
             <% if @clip.tag_list.present? %>
-              <%= highlight(@clip.transcription, @clip.tag_list) -%>
+              <%= highlight(@clip.transcription, /\b(#{@clip.tag_list})\b/i) -%>
             <% else %>
               <%= @clip.transcription %>
             <% end %>
