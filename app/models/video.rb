@@ -12,7 +12,7 @@ class Video < ApplicationRecord
   scope :no_transcription, -> { where(transcription: nil) }
   scope :has_transcription, -> { where.not(transcription: nil) }
   scope :no_thumbnail, -> { where(thumbnail_path: nil) }
-  scope :normal_range, -> { where(posted_at: 120.days.ago..) }
+  scope :normal_range, -> { where(posted_at: DAYS_RANGE.days.ago..) }
 
   def directories
     location.split('T')[0].split('-')
