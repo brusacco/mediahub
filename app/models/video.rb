@@ -92,6 +92,28 @@ class Video < ApplicationRecord
     _stdout, _stderr, _status = Open3.capture3(command)
   end
 
+  def all_tags
+    all_tags = []
+    tags.each do |tag|
+      all_tags << tag.name
+      tag.variations.split(',').each do |variation|
+        all_tags << variation
+      end
+    end
+    all_tags.uniq
+  end
+
+  def all_tags_boundarys
+    all_tags = []
+    tags.each do |tag|
+      all_tags << /\b(#{tag.name})\b/i
+      tag.variations.split(',').each do |variation|
+        all_tags << /\b(#{variation})\b/i
+      end
+    end
+    all_tags.uniq
+  end
+
   private
 
   def remove_thumbnail

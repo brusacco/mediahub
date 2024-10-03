@@ -24,8 +24,7 @@ ActiveAdmin.register Video do
     column :station
     column :transcription do |video|
       if video.tag_list.present?
-        highlighted_transcription = highlight(video.transcription, /\b(#{video.tag_list})\b/i, highlighter: '<span class="highlight">\1</span>')
-        highlighted_transcription.html_safe
+        highlight(video.transcription, video.all_tags_boundarys, highlighter: '<span class="highlight">\1</span>')
       else
         video.transcription
       end
