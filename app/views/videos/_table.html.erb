@@ -8,7 +8,7 @@
       <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Fecha</th>
       <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Imagen</th>
       <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Transcripcion</th>
-      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Etiquetas</th>
+      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Etiquetas y Variaciones</th>
       <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Estacion</th>
     </tr>
   </thead>
@@ -21,12 +21,12 @@
         </td>
         <td class="px-3 py-4 text-gray-500">     
           <% if video.tag_list.present? %>
-            <%= highlight(video.transcription, Regexp.union(video.tag_list.map { |tag| /\b(#{Regexp.escape(tag)})\b/i })) -%>
+            <%= highlight(video.transcription, video.all_tags_boundarys) -%>
           <% else %>
             <%= video.transcription %>
           <% end %>
         </td>
-        <td class="px-3 py-4 text-xs text-gray-500"><%= video.tag_list %></td>
+        <td class="px-3 py-4 text-xs text-gray-500"><%= video.all_tags.join(', ') %></td>
         <td class="whitespace-nowrap px-3 py-4 text-xs text-gray-500"><%= video.station.name %></td>
       </tr>
     <% end %>
