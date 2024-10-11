@@ -4,7 +4,7 @@ class VideosController < ApplicationController
   def show
     @clip = Video.find(params[:id])
 
-    host = 'https://www.mediahub.com.py/'
+    host = 'https://mediahub.com.py/'
     @clip_path = host + @clip.public_path
   end
 end

@@ -5,7 +5,7 @@ task tagger: :environment do
     next unless result.success?
 
     video.tag_list = result.data
-    host = 'https://www.mediahub.com.py/'
+    host = 'https://mediahub.com.py/'
     url = host + video.public_path
     puts url
     puts video.location
