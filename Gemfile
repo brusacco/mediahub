@@ -101,5 +101,3 @@ gem 'font-awesome-sass', '~> 6.2'
 gem "chartkick"
 
 gem "groupdate"
-
-gem "webdrivers"
