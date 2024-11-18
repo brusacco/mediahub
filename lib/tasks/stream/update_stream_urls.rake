@@ -63,6 +63,7 @@ namespace :stream do
       driver.navigate.to(station.stream_source)
       sleep 5
       if station.name == 'C9N' || station.name == 'SNT'
+        sleep 5
         video_element = driver.find_element(css: 'video')
         video_element.click
       end
