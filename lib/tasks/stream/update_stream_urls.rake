@@ -24,7 +24,6 @@ namespace :stream do
 
     driver = Selenium::WebDriver.for :chrome, options: options
 
-
     driver.intercept do |request, &continue|
       url = request.url
       if url.include?('playlist.m3u8') && @current_station
