@@ -15,7 +15,7 @@ namespace :stream do
     options.add_argument('--log-level=3') # Suppress logging
 
     # Initialize Chrome Driver with the updated options
-    driver = Selenium::WebDriver.for(:chrome, options:)
+    driver = Selenium::WebDriver.for(:chrome, options: options)
 
     driver.intercept do |request, &continue|
       url = request.url
