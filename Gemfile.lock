@@ -323,7 +323,7 @@ GEM
       sprockets (> 3.0)
       sprockets-rails
       tilt
-    selenium-devtools (0.128.0)
+    selenium-devtools (0.130.0)
       selenium-webdriver (~> 4.2)
     selenium-webdriver (4.18.1)
       base64 (~> 0.2)
@@ -418,7 +418,7 @@ DEPENDENCIES
   redis (>= 4.0.1)
   rubocop-rails (~> 2.24)
   sassc (~> 2.4)
-  selenium-devtools (~> 0.128.0)
+  selenium-devtools (= 0.130.0)
   selenium-webdriver
   sprockets-rails
   sqlite3 (~> 1.4)

@@ -62,6 +62,10 @@ namespace :stream do
       # Navigate to the desired webpage
       driver.navigate.to(station.stream_source)
       sleep 5
+      if station.name == 'C9N' || station.name == 'SNT'
+        video_element = driver.find_element(css: 'video')
+        video_element.click
+      end
     end
 
     # Close the browser after extraction
