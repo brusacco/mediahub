@@ -14,8 +14,8 @@ namespace :stream do
     options.add_argument('--disable-gpu')
     options.add_argument('--log-level=3') # Suppress logging
 
-    options.binary = '/opt/google/chrome/google-chrome'
-    
+    options.binary = '/usr/bin/chromium-browser'
+
     # Initialize Chrome Driver with the updated options
     driver = Selenium::WebDriver.for(:chrome, options: options)
 
