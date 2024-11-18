@@ -49,13 +49,6 @@ namespace :stream do
     # Navigate to the desired webpage
     driver.navigate.to(@current_station.stream_source)
     sleep 5
-    if @current_station.name == 'C9N' || @current_station.name == 'SNT'
-      puts 'Pressing Play button'
-      sleep 5
-      video_element = driver.find_element(css: 'video')
-      video_element.click
-      sleep 5
-    end
 
     # Close the browser after extraction
     driver.quit
