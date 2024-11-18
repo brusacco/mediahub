@@ -11,11 +11,8 @@ namespace :stream do
     # Set up Selenium with ChromeDriver
     options = Selenium::WebDriver::Chrome::Options.new
     options.add_argument('--headless') # Run Chrome in headless mode (no GUI)
-    options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-gpu')
     options.add_argument('--log-level=3') # Suppress logging
-
-    # options.binary = '/usr/bin/chromium-browser'
 
     # Initialize Chrome Driver with the updated options
     driver = Selenium::WebDriver.for(:chrome, options: options)
