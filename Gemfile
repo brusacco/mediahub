@@ -94,7 +94,7 @@ gem "paper_trail", "~> 15.1"
 
 gem 'selenium-webdriver'
 
-gem "selenium-devtools", "~> 0.128.0"
+gem "selenium-devtools"#, "~> 0.128.0"
 
 gem 'font-awesome-sass', '~> 6.2'
 
