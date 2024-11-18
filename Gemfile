@@ -92,7 +92,7 @@ gem "mysql2", "~> 0.5.6"
 
 gem "paper_trail", "~> 15.1"
 
-gem 'selenium-webdriver', '~> 4.30'
+gem 'selenium-webdriver'
 
 gem 'selenium-devtools', '0.130.0'
 
