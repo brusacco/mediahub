@@ -48,6 +48,7 @@ namespace :stream do
     puts "Processing station stream URL: #{@current_station.name}"
     # Navigate to the desired webpage
     driver.navigate.to(@current_station.stream_source)
+    sleep 5
 
     # Close the browser after extraction
     driver.quit
