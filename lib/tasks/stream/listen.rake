@@ -40,7 +40,8 @@ namespace :stream do # rubocop:disable Metrics/BlockLength
             command = "ffmpeg -i '#{station.stream_url}' -vf scale=1024:-1 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 -preset veryfast '#{base_directory}%Y-%m-%dT%H_%M_%S.mp4'"
 
             # Execute the command
-            _stdout, _stderr, _status = Open3.capture3(command)
+            _stdout, stderr, _status = Open3.capture3(command)
+            puts stderr
 
             # If ffmpeg fails or ends this station is disconnected
             station.update(stream_status: :disconnected)
