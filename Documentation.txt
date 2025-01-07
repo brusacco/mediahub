@@ -108,3 +108,24 @@ rails g model TopicStatDaily video_quantity:integer topic_date:date topic:refere
 {
     "url": "https://edge.streann.com/megacadena1/megacadena1/playlist.m3u8?auth=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJhbm9ueW1vdXMiLCJpcCI6IjE4MS4xMjAuMTQ2LjE5OCIsImV4cCI6MTcyNzcyNDU2NSwicmlkIjoiNWUzNDRhNGQyY2RjYmUxYzQ5ZmQ4NTZjIiwia2V5Ijoia2V5MSIsImNpZCI6IjVlNjJiOTZlMmNkY2ZhYzJkZDg4ODVkZCJ9.GXLR2KC04wIASgdg9h28x_yHS0D_i_I2UJCmGtGqtO0"
 }
+
+# deploy to prod
+sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/mediahub.com.py.conf
+sudo a2ensite mediahub.com.py.conf
+sudo a2enmod rewrite
+sudo a2enmod proxy proxy_http
+sudo a2enmod expires
+sudo a2enmod headers
+sudo a2enmod ssl
+
+sudo snap install --classic certbot
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
+sudo certbot --apache
+sudo certbot renew --dry-run
+
+sudo systemctl restart apache2
+
+EDITOR="mc" bin/rails credentials:edit
+rm config/credentials.yml.enc config/master.key
+bin/rails credentials:edit
+rails secret
