@@ -125,7 +125,8 @@ sudo certbot renew --dry-run
 
 sudo systemctl restart apache2
 
-EDITOR="mc" bin/rails credentials:edit
+bin/rails credentials:edit
 rm config/credentials.yml.enc config/master.key
 bin/rails credentials:edit
+VISUAL="mate --wait" bin/rails credentials:edit
 rails secret
