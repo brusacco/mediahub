@@ -180,6 +180,7 @@ GEM
       kaminari-core (= 1.2.2)
     kaminari-core (1.2.2)
     language_server-protocol (3.17.0.3)
+    logger (1.6.5)
     loofah (2.22.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.12.0)
@@ -314,7 +315,7 @@ GEM
       rubocop-ast (>= 1.31.1, < 2.0)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
-    rubyzip (2.3.2)
+    rubyzip (2.4.1)
     sassc (2.4.0)
       ffi (~> 1.9)
     sassc-rails (2.1.2)
@@ -323,10 +324,11 @@ GEM
       sprockets (> 3.0)
       sprockets-rails
       tilt
-    selenium-devtools (0.130.0)
+    selenium-devtools (0.132.0)
       selenium-webdriver (~> 4.2)
-    selenium-webdriver (4.18.1)
+    selenium-webdriver (4.28.0)
       base64 (~> 0.2)
+      logger (~> 1.4)
       rexml (~> 3.2, >= 3.2.5)
       rubyzip (>= 1.2.2, < 3.0)
       websocket (~> 1.0)
@@ -376,7 +378,7 @@ GEM
       bindex (>= 0.4.0)
       railties (>= 6.0.0)
     webrick (1.8.1)
-    websocket (1.2.10)
+    websocket (1.2.11)
     websocket-driver (0.7.6)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
@@ -418,7 +420,7 @@ DEPENDENCIES
   redis (>= 4.0.1)
   rubocop-rails (~> 2.24)
   sassc (~> 2.4)
-  selenium-devtools (= 0.130.0)
+  selenium-devtools
   selenium-webdriver
   sprockets-rails
   sqlite3 (~> 1.4)

@@ -24,7 +24,11 @@ namespace :stream do
 
     driver = Selenium::WebDriver.for :chrome, options: options
 
+    puts "driver out: #{driver.inspect}"
+
     driver.intercept do |request, &continue|
+      puts "ENTRO!"
+
       url = request.url
       if url.include?('playlist.m3u8') && @current_station
         puts "Found Stream URL: #{url}"
@@ -53,12 +57,14 @@ namespace :stream do
     driver.manage.timeouts.script_timeout = 60 # 30 seconds for scripts
 
     Station.where.not(stream_source: nil).find_each do |station|
+      puts "STATION: #{station.name}"
       next if station.stream_source.blank?
 
       puts '---------------------------------------------------------'
       puts "Processing station: #{station.name}"
       @current_station = station
       # Navigate to the desired webpage
+      puts "Navigating to: #{station.stream_source}"
       driver.navigate.to(station.stream_source)
       sleep 5
     end
