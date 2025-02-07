@@ -24,11 +24,7 @@ namespace :stream do
 
     driver = Selenium::WebDriver.for :chrome, options: options
 
-    puts "driver out: #{driver.inspect}"
-
     driver.intercept do |request, &continue|
-      puts "ENTRO!"
-
       url = request.url
       if url.include?('playlist.m3u8') && @current_station
         puts "Found Stream URL: #{url}"
@@ -57,19 +53,46 @@ namespace :stream do
     driver.manage.timeouts.script_timeout = 60 # 30 seconds for scripts
 
     Station.where.not(stream_source: nil).find_each do |station|
-      puts "STATION: #{station.name}"
       next if station.stream_source.blank?
 
       puts '---------------------------------------------------------'
       puts "Processing station: #{station.name}"
       @current_station = station
       # Navigate to the desired webpage
-      puts "Navigating to: #{station.stream_source}"
       driver.navigate.to(station.stream_source)
       sleep 5
     end
 
     # Close the browser after extraction
+    driver.quit
+  end
+
+  desc 'test'
+  task test: :environment do
+    options = Selenium::WebDriver::Chrome::Options.new
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--disable-prompt-on-repost')
+    options.add_argument('--ignore-certificate-errors')
+    options.add_argument('--disable-popup-blocking')
+    options.add_argument('--disable-translate')
+    options.add_argument('--log-level=3') # Suppress logging
+
+    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"
+    options.add_argument("--user-agent=#{user_agent}")
+    driver = Selenium::WebDriver.for :chrome, options: options
+    # driver.navigate.to("https://www.google.com")
+    # puts driver.title
+
+    driver.intercept do |request, &continue|
+      puts "Solicitud interceptada: #{request.url}"
+    
+      continue.call(request)
+    end
+    
+    driver.navigate.to('https://www.ejemplo.com')
     driver.quit
   end
 end
