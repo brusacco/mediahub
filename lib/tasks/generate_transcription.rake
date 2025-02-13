@@ -8,6 +8,8 @@ task generate_transcription: :environment do
   model = 'medium'
 
   Parallel.each(Video.where(transcription: nil).order(posted_at: :desc), in_processes: batch_size) do |video|
+    next unless File.exist?(video.path)
+    
     directory_path = Rails.public_path.join('videos', video.station.directory, 'temp')
     output_file = File.join(directory_path, video.location.gsub('.mp4', '.txt'))
 
@@ -21,15 +23,16 @@ task generate_transcription: :environment do
     _stdout, stderr, status = Open3.capture3(command)
 
     if status.success?
-      # Update the transcription field in the Video model
-      video.update(transcription: File.read(output_file))
-
-      # Delete the output file
-      FileUtils.rm(output_file)
-
-      puts "Transcription generated for #{video.location}."
+      if File.exist?(output_file)
+        video.update(transcription: File.read(output_file))
+        FileUtils.rm(output_file)
+        puts "Transcription generated for #{video.location}."
+      else
+        puts "Transcription file not found for #{video.location}."
+      end
     else
-      puts "Failed to generate transcription for #{video.location}: #{stderr}"
+      puts "Failed to generate transcription for #{video.location}."
+      puts "Error: #{stderr}"
     end
   end
 end
