@@ -7,15 +7,20 @@ task import_videos: :environment do
   # batch_size = 0
   # Parallel.each(Station.all, in_processes: batch_size) do |station|
   Station.find_each do |station|
+    puts "Station: #{station.name}"
     directory_path = Rails.public_path.join('videos', station.directory, 'temp')
-
+    puts "Directory path: #{station.directory}"
+    
     # Check if the directory exists
     next unless Dir.exist?(directory_path)
 
     Dir.glob(File.join(directory_path, '*.mp4')).each do |file|
       next if in_use?(file)
-
+      
       filename = File.basename(file)
+      
+      puts "Filename: #{filename}"
+
       timestamp = filename.split('.')[0].gsub('_', ':')
       next unless timestamp
 
