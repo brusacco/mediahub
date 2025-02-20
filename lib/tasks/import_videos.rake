@@ -15,6 +15,7 @@ task import_videos: :environment do
     next unless Dir.exist?(directory_path)
 
     Dir.glob(File.join(directory_path, '*.mp4')).each do |file|
+      puts "Fil: #{file}"
       next if in_use?(file)
       
       filename = File.basename(file)
