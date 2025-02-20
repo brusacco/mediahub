@@ -88,7 +88,9 @@ gem 'acts-as-taggable-on', '~> 10.0'
 
 gem 'puma-daemon', '~> 0.3.2'
 
-gem "mysql2", "~> 0.5.6"
+group :production do
+  gem "mysql2", "~> 0.5.6"
+end
 
 gem "paper_trail", "~> 15.1"
 
