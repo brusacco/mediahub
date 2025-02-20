@@ -25,6 +25,8 @@ task import_videos: :environment do
       video.public_path = Pathname.new(video.path).relative_path_from(Rails.public_path).to_s
       video.generate_thumbnail
       video.save
+
+      puts "Video saved!"
     end
   end
 end
