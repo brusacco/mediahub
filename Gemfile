@@ -26,7 +26,7 @@ gem 'turbo-rails'
 gem 'stimulus-rails'
 
 # Use Tailwind CSS [https://github.com/rails/tailwindcss-rails]
-gem 'tailwindcss-rails'
+gem 'tailwindcss-rails', '2.3.0'
 
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem 'jbuilder'
@@ -86,7 +86,7 @@ gem 'whenever', '~> 1.0', require: false
 
 gem 'acts-as-taggable-on', '~> 10.0'
 
-gem 'puma-daemon', '~> 0.3.2'
+gem 'puma-daemon'#, '~> 0.3.2'
 
 group :production do
   gem "mysql2", "~> 0.5.6"
@@ -96,7 +96,7 @@ gem "paper_trail", "~> 15.1"
 
 gem 'selenium-webdriver'
 
-gem 'selenium-devtools', '0.130.0'
+gem 'selenium-devtools' #, '0.130.0'
 
 gem 'font-awesome-sass', '~> 6.2'
 

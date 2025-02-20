@@ -26,6 +26,7 @@ ActiveAdmin.register Station do
     end
     column :name
     column :directory
+    column :stream_url
     tag_column :stream_status
     column :stream_source
     column :created_at
@@ -41,6 +42,7 @@ ActiveAdmin.register Station do
       end
       row :name
       row :directory
+      row :stream_url
       row :stream_status
       row :stream_source
       row :created_at

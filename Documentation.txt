@@ -14,6 +14,8 @@ ffmpeg -i https://tigocloudgen.desdeparaguay.net/unicanal/unicanal_baja/playlist
 whisper *.mp4 --language Spanish --output_format txt
 
 
+ffmpeg -i "https://tigocloudgen.desdeparaguay.net/gentv/gentv_py_baja/playlist.m3u8?k=660cf02cb97f819a0663f4b69bc4c77a801e1522ead20bcf9bdd128d35c9688d&exp=1739459367" -vf scale=1024:-1 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 -preset veryfast "public/videos/gen/temp/%Y-%m-%dT%H_%M_%S.mp4"
+
 ffmpeg -i https://zn1tf.desdeparaguay.net/npy/npy_py_baja/playlist.m3u8?k=5424a130fd83e690f4e38953fdf32ae7c8abaab438d583c6174c431f48489c88&exp=1722701298 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "npy/temp/%Y-%m-%dT%H_%M_%S.mp4"
 
 ffmpeg -i https://zn1tf.desdeparaguay.net/telefuturo/telefuturo_py_baja/playlist.m3u8?k=6c7e0190c9b2127ee96c6c01e2bb41fb47d26639a7c48f1b426e7dcdb67e457d&exp=1722750525  -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 "telefuturo/temp/%Y-%m-%dT%H_%M_%S.mp4"
@@ -108,3 +110,40 @@ rails g model TopicStatDaily video_quantity:integer topic_date:date topic:refere
 {
     "url": "https://edge.streann.com/megacadena1/megacadena1/playlist.m3u8?auth=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJhbm9ueW1vdXMiLCJpcCI6IjE4MS4xMjAuMTQ2LjE5OCIsImV4cCI6MTcyNzcyNDU2NSwicmlkIjoiNWUzNDRhNGQyY2RjYmUxYzQ5ZmQ4NTZjIiwia2V5Ijoia2V5MSIsImNpZCI6IjVlNjJiOTZlMmNkY2ZhYzJkZDg4ODVkZCJ9.GXLR2KC04wIASgdg9h28x_yHS0D_i_I2UJCmGtGqtO0"
 }
+
+# deploy to prod
+sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/mediahub.com.py.conf
+sudo a2ensite mediahub.com.py.conf
+sudo a2enmod rewrite
+sudo a2enmod proxy proxy_http
+sudo a2enmod expires
+sudo a2enmod headers
+sudo a2enmod ssl
+
+sudo snap install --classic certbot
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
+sudo certbot --apache
+sudo certbot renew --dry-run
+
+sudo systemctl restart apache2
+
+bin/rails credentials:edit
+rm config/credentials.yml.enc config/master.key
+bin/rails credentials:edit
+VISUAL="mate --wait" bin/rails credentials:edit
+rails secret
+
+# chromedriver
+sudo apt remove google-chrome-stable
+sudo apt remove chromedriver
+sudo rm /usr/bin/chromedriver
+
+https://mirror.cs.uchicago.edu/google-chrome/pool/main/g/google-chrome-stable/
+wget https://mirror.cs.uchicago.edu/google-chrome/pool/main/g/google-chrome-stable/google-chrome-stable_130.0.6723.116-1_amd64.deb
+
+google-chrome --version
+wget https://storage.googleapis.com/chrome-for-testing-public/$(google-chrome --version | awk '{print $3}')/linux64/chromedriver-linux64.zip
+unzip chromedriver-linux64.zip
+sudo mv chromedriver-linux64/chromedriver /usr/bin/chromedriver
+sudo chmod +x /usr/bin/chromedriver
+chromedriver --version
