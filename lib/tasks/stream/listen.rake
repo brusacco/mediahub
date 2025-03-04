@@ -37,7 +37,7 @@ namespace :stream do # rubocop:disable Metrics/BlockLength
 
             # Construct the ffmpeg command with station's stream_url and target directory
             # command = "ffmpeg -i '#{station.stream_url}' -vf scale=800x600 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 -preset veryfast '#{base_directory}/%Y-%m-%dT%H_%M_%S.mp4'"
-            command = "ffmpeg -i '#{station.stream_url}' -vf scale=1024:-1 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 -preset veryfast '#{base_directory}%Y-%m-%dT%H_%M_%S.mp4'"
+            command = "ffmpeg -i '#{station.stream_url}' -vf scale=1024:-1 -preset ultrafast -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 -preset veryfast '#{base_directory}%Y-%m-%dT%H_%M_%S.mp4'"
 
             # Execute the command
             _stdout, stderr, _status = Open3.capture3(command)
