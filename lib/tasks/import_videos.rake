@@ -49,14 +49,6 @@ def move_video(video, file)
   new_location
 end
 
-def mp4_downloaded_complete?(file_path)
-  command = "ffmpeg -v error -i #{file_path} -f null -"
-  Open3.popen3(command) do |_stdin, _stdout, stderr, _wait_thr|
-    error_message = stderr.read
-    return error_message.empty? # If there are no errors, the file is likely complete
-  end
-end
-
 def in_use?(file_path)
   command = "lsof -w #{file_path}"
   Open3.popen3(command) do |_stdin, stdout, _stderr, _wait_thr|
