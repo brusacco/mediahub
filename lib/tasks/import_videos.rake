@@ -10,16 +10,16 @@ task import_videos: :environment do
     puts "Station: #{station.name}"
     directory_path = Rails.public_path.join('videos', station.directory, 'temp')
     puts "Directory path: #{station.directory}"
-    
+
     # Check if the directory exists
     next unless Dir.exist?(directory_path)
 
     Dir.glob(File.join(directory_path, '*.mp4')).each do |file|
       puts "File: #{file}"
       next if in_use?(file)
-      
+
       filename = File.basename(file)
-      
+
       puts "Filename: #{filename}"
 
       timestamp = filename.split('.')[0].gsub('_', ':')
@@ -47,14 +47,6 @@ def move_video(video, file)
   FileUtils.mv(file, new_location) if File.exist?(file)
 
   new_location
-end
-
-def mp4_downloaded_complete?(file_path)
-  command = "ffmpeg -v error -i #{file_path} -f null -"
-  Open3.popen3(command) do |_stdin, _stdout, stderr, _wait_thr|
-    error_message = stderr.read
-    return error_message.empty? # If there are no errors, the file is likely complete
-  end
 end
 
 def in_use?(file_path)
