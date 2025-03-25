@@ -13,7 +13,7 @@ task process_videos: :environment do
     begin
       ENV['RAILS_ENV'] = 'production'
       Rake::Task['import_videos'].invoke
-      Rake::Task['generate_transcription'].invoke
+      # Rake::Task['generate_transcription'].invoke
     ensure
       FileUtils.rm_f(lock_file)
     end
