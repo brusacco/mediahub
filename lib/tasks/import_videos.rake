@@ -32,8 +32,15 @@ task import_videos: :environment do
       video.generate_thumbnail
       video.save
 
-      puts "Video saved!"
+      puts 'Video saved!'
     end
+  end
+
+  begin
+    ENV['RAILS_ENV'] = 'production'
+    Rake::Task['generate_transcription'].invoke
+  ensure
+    FileUtils.rm_f(lock_file)
   end
 end
 

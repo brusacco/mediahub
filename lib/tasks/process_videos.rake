@@ -10,12 +10,7 @@ task process_videos: :environment do
   else
     File.write(lock_file, Process.pid)
 
-    begin
-      ENV['RAILS_ENV'] = 'production'
-      # Rake::Task['import_videos'].invoke
-      Rake::Task['generate_transcription'].invoke
-    ensure
-      FileUtils.rm_f(lock_file)
-    end
+    ENV['RAILS_ENV'] = 'production'
+    Rake::Task['import_videos'].invoke
   end
 end
