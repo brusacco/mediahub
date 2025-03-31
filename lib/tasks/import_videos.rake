@@ -35,13 +35,6 @@ task import_videos: :environment do
       puts 'Video saved!'
     end
   end
-
-  begin
-    ENV['RAILS_ENV'] = 'production'
-    Rake::Task['generate_transcription'].invoke
-  ensure
-    FileUtils.rm_f(lock_file)
-  end
 end
 
 def move_video(video, file)
