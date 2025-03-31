@@ -8,19 +8,20 @@ task process_videos: :environment do
     puts 'Task is already running. Exiting...'
     exit
   else
-    puts 'creando lock file'
+    puts 'Creando lock file'
     File.write(lock_file, Process.pid)
 
     begin
       ENV['RAILS_ENV'] = 'production'
       puts 'Se va a ejecutar el primer rake'
-      Rake::Task['import_videos'].enhance do
-        puts 'Se esta ejecutando el primer rake'
-        Rake::Task['generate_transcription'].execute
-        puts 'Termino el segundo rake'
-      end
+      Rake::Task['import_videos'].invoke
+      puts 'Terminó el primer rake'
+
+      puts 'Se va a ejecutar el segundo rake'
+      Rake::Task['generate_transcription'].invoke
+      puts 'Terminó el segundo rake'
     ensure
-      puts 'borrando lock file'
+      puts 'Borrando lock file'
       FileUtils.rm_f(lock_file)
     end
   end
