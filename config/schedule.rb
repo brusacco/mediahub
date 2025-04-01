@@ -6,11 +6,11 @@
 # http://en.wikipedia.org/wiki/Cron
 
 set :environment, 'production'
-# set :output, "/path/to/my/cron_log.log"
+set :output, 'log/whenever.log'
 
-# every 1.minute do
-#   rake 'process_videos'
-# end
+every 1.minute do
+  rake 'process_videos'
+end
 
 # every 5.minutes do
 #   rake 'tagger'
