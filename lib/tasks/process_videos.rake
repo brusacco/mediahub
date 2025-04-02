@@ -12,14 +12,14 @@ task process_videos: :environment do
     File.write(lock_file, Process.pid)
 
     begin
-      ENV['RAILS_ENV'] = 'production'
+      # ENV['RAILS_ENV'] = 'production'
       puts 'Se va a ejecutar el primer rake'
-      Rake::Task['import_videos'].invoke
+      # Rake::Task['import_videos'].invoke
       puts 'Terminó el primer rake'
       sleep 10
 
       puts 'Se va a ejecutar el segundo rake'
-      Rake::Task['generate_transcription'].invoke
+      # Rake::Task['generate_transcription'].invoke
       puts 'Terminó el segundo rake'
       sleep 10
     ensure
