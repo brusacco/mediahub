@@ -16,13 +16,16 @@ task process_videos: :environment do
       puts 'Se va a ejecutar el primer rake'
       Rake::Task['import_videos'].invoke
       puts 'Terminó el primer rake'
+      sleep 10
 
       puts 'Se va a ejecutar el segundo rake'
       Rake::Task['generate_transcription'].invoke
       puts 'Terminó el segundo rake'
+      sleep 10
     ensure
       puts 'Borrando lock file'
       FileUtils.rm_f(lock_file)
+      sleep 10
     end
   end
 end
