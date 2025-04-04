@@ -20,6 +20,10 @@ task process_videos: :environment do
       puts 'Se va a ejecutar el segundo rake'
       Rake::Task['generate_transcription'].invoke
       puts 'Terminó el segundo rake'
+
+      puts 'Se va a ejecutar el tercer rake'
+      Rake::Task['remove_fail_videos'].invoke
+      puts 'Terminó el tercer rake'
     ensure
       puts 'Borrando lock file'
       FileUtils.rm_f(lock_file)
