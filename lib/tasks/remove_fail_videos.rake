@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-desc 'Remove videos without transcription and older'
+desc 'Remove videos without transcription and older than...'
 task remove_fail_videos: :environment do
-  puts 'Eliminando videos sin fallidos...'
+  puts 'Eliminando videos fallidos...'
   fail_videos = Video.where(transcription: nil, created_at: ..36.hours.ago)
   deleted_count = 0
 
