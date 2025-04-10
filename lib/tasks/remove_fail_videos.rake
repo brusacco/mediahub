@@ -3,7 +3,7 @@
 desc 'Remove videos without transcription and older than...'
 task remove_fail_videos: :environment do
   puts 'Eliminando videos fallidos...'
-  fail_videos = Video.where(transcription: nil, created_at: ..36.hours.ago)
+  fail_videos = Video.where(transcription: nil, created_at: ..24.hours.ago)
   deleted_count = 0
 
   begin
