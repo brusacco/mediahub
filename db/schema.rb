@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_09_16_191532) do
+ActiveRecord::Schema[7.1].define(version: 2025_04_10_202038) do
   create_table "active_admin_comments", force: :cascade do |t|
     t.string "namespace"
     t.text "body"
@@ -73,6 +73,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_09_16_191532) do
     t.text "stream_url"
     t.integer "stream_status", default: 0, null: false
     t.text "stream_source"
+    t.boolean "active", default: true
   end
 
   create_table "taggings", force: :cascade do |t|

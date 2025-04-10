@@ -21,7 +21,7 @@ namespace :stream do # rubocop:disable Metrics/BlockLength
     end
 
     # Iterate through each Station record
-    Station.find_each do |station|
+    Station.active.find_each do |station|
       threads << Thread.new do
         begin
           loop do

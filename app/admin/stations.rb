@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register Station do
-  permit_params :name, :directory, :stream_url, :stream_status, :stream_source, :logo
+  permit_params :name, :directory, :stream_url, :stream_status, :stream_source, :logo, :active
 
   filter :name
   filter :stream_status, as: :select
@@ -14,6 +14,7 @@ ActiveAdmin.register Station do
       f.input :stream_url
       f.input :stream_status
       f.input :stream_source
+      f.input :active
     end
 
     f.actions
@@ -29,6 +30,7 @@ ActiveAdmin.register Station do
     column :stream_url
     tag_column :stream_status
     column :stream_source
+    column :active
     column :created_at
     column :updated_at
     actions
@@ -45,6 +47,7 @@ ActiveAdmin.register Station do
       row :stream_url
       row :stream_status
       row :stream_source
+      row :active
       row :created_at
       row :updated_at
     end
