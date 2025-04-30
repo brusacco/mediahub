@@ -39,12 +39,12 @@ task generate_transcription: :environment do
       if File.exist?(output_file)
         video.update(transcription: File.read(output_file))
         FileUtils.rm(output_file) if File.exist?(output_file) # Limpieza segura
-        puts "Transcription generated for #{video.location}."
+        puts "Transcription generated for #{video.location}"
       else
-        puts "Transcription file not found for #{video.location}."
+        puts "Transcription file not found for #{video.location}"
       end
     else
-      puts "Failed to generate transcription for #{video.location}."
+      puts "Failed to generate transcription for #{video.location}"
       puts "Error: #{stderr}"
     end
   rescue StandardError => e
