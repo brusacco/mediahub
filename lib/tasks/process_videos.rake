@@ -4,16 +4,34 @@ desc 'Run import_videos, generate_transcription, and remove_fail_videos sequenti
 task process_videos: :environment do
   lock_file = Rails.root.join('tmp', 'process_videos.lock')
 
+  # Verificar si el lock_file existe
   if File.exist?(lock_file)
-    puts 'Task is already running. Exiting...'
-    exit
+    pid = File.read(lock_file).to_i
+    # Verificar si el proceso con el PID está activo
+    process_active = begin
+      pid > 0 && Process.getpgid(pid) ? true : false
+    rescue Errno::ESRCH
+      false
+    end
+
+    if process_active
+      puts "Task is already running with PID #{pid}. Exiting..."
+      Rails.logger.info "Task process_videos ya está ejecutándose con PID #{pid}"
+      exit
+    else
+      puts "Found stale lock file with PID #{pid}. Removing it."
+      Rails.logger.info "Encontrado lock file obsoleto con PID #{pid}. Eliminándolo."
+      FileUtils.rm_f(lock_file)
+    end
   end
 
+  # Crear lock_file
   puts 'Creando lock file'
   File.write(lock_file, Process.pid.to_s)
+  Rails.logger.info "Creando lock file con PID #{Process.pid}"
 
   begin
-    ENV['RAILS_ENV'] ||= 'production' # Establecer solo si no está definido
+    ENV['RAILS_ENV'] ||= 'production'
     Rails.logger.info 'Iniciando process_videos'
 
     # Ejecutar primer task
@@ -50,5 +68,6 @@ task process_videos: :environment do
   ensure
     puts 'Borrando lock file'
     FileUtils.rm_f(lock_file)
+    Rails.logger.info 'Lock file eliminado'
   end
 end
