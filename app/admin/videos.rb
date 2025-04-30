@@ -30,6 +30,7 @@ ActiveAdmin.register Video do
       end
     end
     column :tag_list
+    column :created_at
     actions
   end
 

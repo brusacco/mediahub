@@ -5,9 +5,12 @@ task remove_fail_videos: :environment do
   puts 'Eliminando videos fallidos...'
   deleted_count = 0
 
-  # Consulta para videos con transcription: nil, location/path vacíos o location inválida, creados hace más de...
-  fail_videos = Video.where(created_at: ..18.hours.ago)
-                     .where('transcription IS NULL OR location IS NULL OR location = ? OR path IS NULL OR path = ? OR location NOT LIKE ?', '', '', '%.mp4')
+  # videos con transcription: nil, location/path vacíos o location inválida, creados hace más de...
+  fail_videos = Video.where(created_at: ..12.hours.ago)
+                     .where(transcription: nil)
+                     .or(Video.where(location: [nil, '']))
+                     .or(Video.where(path: [nil, '']))
+                     .or(Video.where('location NOT LIKE ?', '%.mp4'))
 
   fail_videos.find_each do |video|
     begin
