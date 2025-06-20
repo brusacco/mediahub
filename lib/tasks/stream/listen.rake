@@ -1,62 +1,70 @@
 # frozen_string_literal: true
 
-namespace :stream do
+# lib/tasks/video_processing.rake
+
+namespace :stream do # rubocop:disable Metrics/BlockLength
   desc 'Process video streams for each station'
-  task listen: :environment do
+  task listen: :environment do # rubocop:disable Metrics/BlockLength
     require 'open3'
 
+    # Create an array to keep track of threads
     threads = []
 
-    # Configuración de señales para terminar la ejecución de forma controlada.
+    # Set up signal handling for Ctrl+C (SIGINT)
+    # Handle various termination signals
     %w[INT TERM HUP QUIT].each do |signal|
       Signal.trap(signal) do
-        Rails.logger.info("#{signal} signal received. Setting stream_status to :disconnected for all stations.")
+        puts "\n#{signal} signal received. Setting stream_status to :disconnected for all stations."
         Station.update_all(stream_status: :disconnected) # rubocop:disable Rails/SkipsModelValidations
         exit 1
       end
     end
 
-    # Itera sobre cada estación activa
-    Station.active.find_each do |station|
-      threads << Thread.new(station.id) do |station_id|
+    # Iterate through each Station record
+    Station.find_each do |station|
+      threads << Thread.new do
         begin
           loop do
-            ActiveRecord::Base.connection_pool.with_connection do
-              station = Station.find(station_id)
-              Rails.logger.info("Connecting to station #{station.name} (ID: #{station.id})")
-              base_directory = "public/videos/#{station.directory}/temp/"
-              FileUtils.mkdir_p(base_directory)
-              station.update(stream_status: :connected)
+            puts "Connecting to station #{station.name} (ID: #{station.id})"
+            # Define the base target directory
+            base_directory = "public/videos/#{station.directory}/temp/"
 
-              # Construir el comando ffmpeg
-              command = "ffmpeg -i '#{station.stream_url}' -vf scale=1024:-1 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 -preset veryfast '#{base_directory}%Y-%m-%dT%H_%M_%S.mp4'"
+            # Ensure the directory exists
+            FileUtils.mkdir_p(base_directory)
 
-              _stdout, stderr, _status = Open3.capture3(command)
-              Rails.logger.error("FFmpeg error for station #{station.id}: #{stderr}") unless stderr.blank?
+            # Update station status to connected while processing
+            station.update(stream_status: :connected)
 
-              station.update(stream_status: :disconnected)
-              Rails.logger.warn("Station #{station.name} disconnected, retrying in 5 seconds...")
-              sleep 5
+            # Construct the ffmpeg command with station's stream_url and target directory
+            # command = "ffmpeg -i '#{station.stream_url}' -vf scale=800x600 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 -preset veryfast '#{base_directory}/%Y-%m-%dT%H_%M_%S.mp4'"
+            command = "ffmpeg -i '#{station.stream_url}' -vf scale=1024:-1 -f segment -segment_time 60 -reset_timestamps 1 -strftime 1 -preset veryfast '#{base_directory}%Y-%m-%dT%H_%M_%S.mp4'"
 
-              next if station.stream_source.blank?
+            # Execute the command
+            _stdout, stderr, _status = Open3.capture3(command)
+            puts stderr
 
-              # Invoca la tarea para actualizar la URL del stream
-              Rake::Task['stream:update_stream_url'].reenable
-              Rake::Task['stream:update_stream_url'].invoke(station.id)
-              station.reload
-            end
+            # If ffmpeg fails or ends this station is disconnected
+            station.update(stream_status: :disconnected)
+            puts "Station #{station.name} disconnected, retrying in 5 seconds..."
+            sleep 5
+
+            next if station.stream_source.blank?
+
+            # Update stream URL by invoking the stream:update_stream_url task
+            Rake::Task['stream:update_stream_url'].reenable
+            Rake::Task['stream:update_stream_url'].invoke(station.id)
+
+            # Reload the station to get the updated stream_url
+            station.reload
           end
         rescue => e
-          Rails.logger.error("Thread error for station #{station_id}: #{e.message}")
-          ActiveRecord::Base.connection_pool.with_connection do
-            if (st = Station.find_by(id: station_id))
-              st.update(stream_status: :disconnected)
-            end
-          end
+          Rails.logger.error("Thread error for station #{station.id}: #{e.message}")
+          station.update(stream_status: :disconnected)
         end
       end
     end
 
+    # Wait for all threads to finish
     threads.each(&:join)
   end
 end

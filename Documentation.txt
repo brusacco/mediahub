@@ -47,7 +47,7 @@ RAILS_ENV=production rake generate_transcription
 
 RAILS_ENV=production rake stream:listen
 RAILS_ENV=production rake stream:update_stream_urls
-RAILS_ENV=production nohup rake stream:listen > output.log 2>&1 &
+RAILS_ENV=production nohup rake stream:listen > log/listen.log 2>&1 &
 
 kill -9 $(ps wuax | grep /opt/google/chrome/chrome | awk {'print $2'})
 
