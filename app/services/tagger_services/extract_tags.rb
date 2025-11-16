@@ -12,17 +12,30 @@ module TaggerServices
       content = video.transcription
       tags_found = []
 
+      return handle_error('No transcription') if content.blank?
+
       if @tag_id.nil?
         tags = Tag.all
       else
         tags = Tag.where(id: @tag_id)
       end
 
+      return handle_error('No tags in database') if tags.empty?
+
       tags.each do |tag|
-        tags_found << tag.name if content.match(/\b#{tag.name}\b/)
-        if tag.variations
+        pattern = build_tag_pattern(tag.name)
+        if pattern && content.match?(pattern)
+          tags_found << tag.name
+        end
+        if tag.variations.present?
           alts = tag.variations.split(',')
-          alts.each { |alt_tag| tags_found << tag.name if content.match(/\b#{alt_tag}\b/) }
+          alts.each do |alt_tag|
+            next if alt_tag.strip.blank?
+            alt_pattern = build_tag_pattern(alt_tag.strip)
+            if alt_pattern && content.match?(alt_pattern)
+              tags_found << tag.name
+            end
+          end
         end
       end
 
@@ -33,6 +46,17 @@ module TaggerServices
       end
     rescue StandardError => e
       handle_error(e.message)
+    end
+
+    private
+
+    def build_tag_pattern(tag_name)
+      return nil if tag_name.blank?
+      
+      # Escape special regex characters and search for exact tag name
+      escaped_tag = Regexp.escape(tag_name.strip)
+      # Build regex with word boundaries, case-sensitive (exact match)
+      Regexp.new("\\b#{escaped_tag}\\b")
     end
   end
 end

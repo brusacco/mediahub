@@ -1,19 +1,21 @@
 # frozen_string_literal: true
 
 ActiveAdmin.register Station do
-  permit_params :name, :directory, :stream_url, :stream_status, :stream_source, :logo, :active
+  permit_params :name, :directory, :stream_url, :stream_status, :stream_source, :logo, :active, :play_button_selector, :use_shadow_dom
 
   filter :name
   filter :stream_status, as: :select
 
   form do |f|
     f.inputs 'Estaciones' do
-      f.input :name, label:'Nombre'
+      f.input :name, label: 'Nombre'
       f.input :logo, as: :file
       f.input :directory
       f.input :stream_url
       f.input :stream_status
       f.input :stream_source
+      f.input :play_button_selector, hint: 'CSS selector, class name, tag name, or XPath for play button'
+      f.input :use_shadow_dom, hint: 'Use Shadow DOM strategy to play video (for custom elements like mux-video)'
       f.input :active
     end
 
@@ -27,9 +29,9 @@ ActiveAdmin.register Station do
     end
     column :name
     column :directory
-    column :stream_url
+    # column :stream_url
     tag_column :stream_status
-    column :stream_source
+    # column :stream_source
     column :active
     column :created_at
     column :updated_at

@@ -4,8 +4,12 @@ require 'open3'
 
 desc 'Generate text transcription of video files'
 task generate_transcription: :environment do
-  batch_size = 4
-  model = 'medium'
+  batch_size = Rails.env.development? ? 1 : 4
+
+  # Configuración según el entorno
+  model = Rails.env.development? ? 'small' : 'medium'
+  device = Rails.env.development? ? 'cpu' : 'cuda'
+  compute_type = Rails.env.development? ? 'int8' : 'float16'
 
   Parallel.each(Video.where(transcription: nil).order(posted_at: :desc), in_processes: batch_size) do |video|
     # Validar que video.path y video.location existan y sean válidos
@@ -31,13 +35,15 @@ task generate_transcription: :environment do
 
     # generar la transcripción
     # command = "whisper-ctranslate2 #{video.path} --model #{model} --language Spanish --output_format txt --device cuda --compute_type float16 --vad_filter True --output_dir #{directory_path}"
-    command = "whisper-ctranslate2 #{video.path} --model #{model} --language Spanish --output_format txt --device cuda --compute_type float16 --output_dir #{directory_path}"
+    command = "whisper-ctranslate2 #{video.path} --model #{model} --language Spanish --output_format txt --device #{device} --compute_type #{compute_type} --output_dir #{directory_path}"
 
     _stdout, stderr, status = Open3.capture3(command)
 
     if status.success?
       if File.exist?(output_file)
-        video.update(transcription: File.read(output_file))
+        # Normalize transcription: replace all whitespace (including newlines) with single spaces
+        transcription_content = File.read(output_file).gsub(/\s+/, ' ').strip
+        video.update(transcription: transcription_content)
         FileUtils.rm(output_file) if File.exist?(output_file) # Limpieza segura
         puts "Transcription generated for #{video.location}"
       else

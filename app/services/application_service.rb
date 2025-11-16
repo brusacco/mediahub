@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'ostruct'
+
 # app/services/application_service.rb
 class ApplicationService
   def self.call(...)

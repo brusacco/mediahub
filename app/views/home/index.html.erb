@@ -1,56 +1,125 @@
-<div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8">
-  <div class="flex flex-wrap -mx-2">
-    <div class="w-full sm:w-1/2 px-2 mb-4 sm:mb-0">
-      <div class="overflow-hidden bg-white shadow sm:rounded-lg">
-        <h2 class="text-xl mx-5 my-5 font-bold tracking-tight text-gray-900">Clips x DIA x TOPICO</h2>
-        <%= line_chart @video_quantities, xtitle: "Fecha", ytitle: "Cant. Clips", thousands: ".", curve: false, library: {
-            plotOptions: {
-              series: {
-                dataLabels: {
-                  enabled: true
-                }
-              }
-            } } %>
-      </div>
+<!-- Hero Section: Dashboard Overview -->
+<section class="relative bg-gradient-to-br from-indigo-50 via-white to-slate-50 py-12 lg:py-16">
+  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl lg:text-5xl">
+        Dashboard de MediaHub
+      </h1>
+      <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+        Análisis y visualización de contenido multimedia en tiempo real
+      </p>
     </div>
-    <div class="w-full sm:w-1/2 px-2 mb-4 sm:mb-0">
-      <div class="overflow-hidden bg-white shadow sm:rounded-lg">
-        <h2 class="text-xl mx-5 my-5 font-bold tracking-tight text-gray-900">Cantidad de Clips en las últimas 24 horas</h2>
-        <%= bar_chart @videos_last_day_topics, xtitle: "TOPICO", ytitle: "Cant. Clips", thousands: ".", library: {
-            plotOptions: {
-              series: {
-                dataLabels: {
-                  enabled: true
+  </div>
+</section>
+
+<!-- Section: Analytics Charts -->
+<section class="py-12 lg:py-16 bg-white">
+  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
+    <!-- Section Header -->
+    <div class="mb-10">
+      <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+        Análisis de Contenido
+      </h2>
+      <p class="mt-2 text-base text-gray-600">
+        Estadísticas y tendencias de clips por tópico y período
+      </p>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+      <!-- Chart 1: Clips por Día por Tópico -->
+      <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 p-6 lg:p-8">
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            Clips por Día por Tópico
+          </h3>
+          <p class="text-sm text-gray-500">
+            Evolución temporal de clips agrupados por tópico
+          </p>
+        </div>
+        <div class="chart-container">
+          <%= line_chart @video_quantities, xtitle: "Fecha", ytitle: "Cant. Clips", thousands: ".", curve: false, library: {
+              plotOptions: {
+                series: {
+                  dataLabels: {
+                    enabled: true
+                  }
                 }
-              }
-            } } %>
+              } } %>
+        </div>
+      </div>
+
+      <!-- Chart 2: Clips últimas 24 horas -->
+      <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 p-6 lg:p-8">
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            Clips en las últimas 24 horas
+          </h3>
+          <p class="text-sm text-gray-500">
+            Distribución de clips por tópico en el último día
+          </p>
+        </div>
+        <div class="chart-container">
+          <%= bar_chart @videos_last_day_topics, xtitle: "Tópico", ytitle: "Cant. Clips", thousands: ".", library: {
+              plotOptions: {
+                series: {
+                  dataLabels: {
+                    enabled: true
+                  }
+                }
+              } } %>
+        </div>
       </div>
     </div>
   </div>
-</div>
+</section>
 
-<div class="overflow-hidden bg-white shadow sm:rounded-lg">
-  <h2 class="text-2xl mx-5 my-5 font-bold tracking-tight text-gray-900">Nube de palabras de Clips</h2>
-  <div class="mt-20 mb-20 px-30 py-10 sm:p-6">
-    <% min_max = find_max_and_min_occurrences(@word_occurrences) %>
-    <ul class="cloud">
-      <% @word_occurrences.shuffle { |a, b| a[1] <=> b[1] }.each do |word, value| %>
-        <li data-weight="<%= normalize_to_scale(value, min_max[:max], min_max[:min]) %>"><%= word %></li>
+<!-- Section: Word Cloud -->
+<section class="py-12 lg:py-16 bg-slate-50">
+  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
+    <!-- Section Header -->
+    <div class="text-center mb-10">
+      <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+        Nube de Palabras
+      </h2>
+      <p class="mt-2 text-base text-gray-600 max-w-2xl mx-auto">
+        Visualización de las palabras más frecuentes en los clips recientes
+      </p>
+    </div>
+
+    <!-- Word Cloud Container -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 lg:p-12">
+      <div class="min-h-[400px] flex items-center justify-center">
+        <% min_max = find_max_and_min_occurrences(@word_occurrences) %>
+        <ul class="cloud">
+          <% @word_occurrences.shuffle { |a, b| a[1] <=> b[1] }.each do |word, value| %>
+            <li data-weight="<%= normalize_to_scale(value, min_max[:max], min_max[:min]) %>"><%= word %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section: Recent Clips by Topic -->
+<section class="py-12 lg:py-16 bg-white">
+  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
+    <!-- Section Header -->
+    <div class="mb-10">
+      <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+        Clips Recientes
+      </h2>
+      <p class="mt-2 text-base text-gray-600">
+        Últimos clips organizados por tópico de interés
+      </p>
+    </div>
+
+    <!-- Clips Grid -->
+    <div class="space-y-12">
+      <% @topicos.each do |topic| %>
+        <% next if topic.list_videos.empty? %>
+        <%= render partial: 'videos/videos', locals: { last_videos: topic.list_videos.limit(12), title: topic.name } %>
       <% end %>
-    </ul>
+    </div>
   </div>
-</div>
-
-<header class="bg-white shadow-sm"></header>
-  <div class="mx-auto px-4 py-4 sm:px-6 lg:px-8">
-    <h1 class="text-2xl font-bold leading-6 text-gray-900">Clips Recientes</h1>
-  </div>
-</header>
-<main>
-  <div class="mx-auto py-2 sm:px-6 lg:px-8">
-    <% @topicos.each do |topic| %>
-      <% next if topic.list_videos.empty?%>
-      <%= render partial: 'videos/videos', locals: { last_videos: topic.list_videos.limit(12), title: topic.name } %>
-    <%end%>
-  </div>
-</main>
+</section>

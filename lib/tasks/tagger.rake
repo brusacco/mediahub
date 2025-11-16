@@ -2,6 +2,7 @@ desc 'Tagger'
 task tagger: :environment do
   Video.where(posted_at: 3.months.ago..Time.current).find_each do |video|
     result = TaggerServices::ExtractTags.call(video.id)
+    puts result.inspect + ' ' + video.id.to_s
     next unless result.success?
 
     video.tag_list = result.data

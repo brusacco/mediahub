@@ -1,51 +1,116 @@
-<div class="container mx-auto px-4 py-8">
-  <h1 class="text-2xl font-bold mb-6">Detalles del Clip</h1>
-  <div class="overflow-x-auto">
-    <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-      <thead class="bg-gray-800 text-white">
-        <tr>
-          <th class="text-left px-4 py-2">Titulo</th>
-          <th class="text-left px-4 py-2">Detalle</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="border-t">
-          <td class="px-4 py-2">Fecha</td>
-          <td class="px-4 py-2"><%= @clip.posted_at.strftime("%d-%m-%Y %H:%M:%S") %></td>
-        </tr>
-        <tr class="border-t">
-          <td class="px-4 py-2">Estación</td>
-          <td class="px-4 py-2"><%= @clip.station.name %></td>
-        </tr>
-        <tr class="border-t">
-          <td class="px-4 py-2">Transcripcion</td>
-          <td class="px-4 py-2">
-            <% if @clip.tag_list.present? %>
-              <%= highlight(@clip.transcription, @clip.all_tags_boundarys) -%>
-            <% else %>
-              <%= @clip.transcription %>
-            <% end %>
-          </td>
-        </tr>
-        <tr class="border-t">
-          <td class="px-4 py-2">Tags y Variaciones</td>
-          <td class="px-4 py-2"><%= @clip.all_tags.join(', ') %></td>
-        </tr>
-        <tr class="border-t">
-          <td class="px-4 py-2">Clip</td>
-          <td class="px-4 py-2">
-            <video class="w-full max-w-md" controls>
-              <source src="<%= @clip_path %>" type="video/mp4">
-              Your browser does not support the video tag.
-            </video>
-            <div class="mt-4">
-              <a href="<%= @clip_path %>" download data-turbo="false" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Descargar Video
-              </a>
-            </div>         
-          </td>
-        </tr>
-      </tbody>
-    </table>
+<!-- Enhanced Header -->
+<header class="bg-white shadow-sm border-b border-gray-200">
+  <div class="max-w-full mx-auto px-4 py-6 sm:px-6 lg:px-12 xl:px-16">
+    <div class="md:flex md:items-center md:justify-between">
+      <div class="flex-1 min-w-0">
+        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">
+          <i class="fas fa-video text-indigo-500 mr-2" aria-hidden="true"></i>Detalles del Clip
+        </h1>
+        <p class="mt-1 text-sm text-gray-600">
+          <%= @clip.station.name %> - <%= @clip.posted_at.strftime("%d-%m-%Y %H:%M:%S") %>
+        </p>
+      </div>
+      <div class="mt-4 flex flex-col sm:flex-row gap-2 md:mt-0 md:ml-4">
+        <a href="<%= @clip_path %>" download data-turbo="false" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+          <i class="fa-solid fa-download mr-2"></i>
+          Descargar Video
+        </a>
+      </div>
+    </div>
   </div>
-</div>
+</header>
+
+<!-- Breadcrumbs -->
+<%= render 'shared/breadcrumbs', items: [
+  { label: 'Inicio', path: root_path, icon: 'fa-solid fa-home' },
+  { label: 'Videos', path: nil },
+  { label: @clip.station.name, path: nil, current: true }
+] %>
+
+<!-- Main Content -->
+<section class="py-8 lg:py-12 bg-gray-50">
+  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Video Player - Left Column (2/3 on large screens) -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Video Player Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="bg-black aspect-video flex items-center justify-center">
+            <video class="w-full h-full" controls poster="<%= "/#{@clip.thumbnail_path}" if @clip.thumbnail_path.present? %>">
+              <source src="<%= @clip_path %>" type="video/mp4">
+              Tu navegador no soporta el elemento de video.
+            </video>
+          </div>
+          <div class="p-6">
+            <div class="flex items-center gap-6 text-sm text-gray-600">
+              <div class="flex items-center gap-2">
+                <i class="fa-regular fa-calendar"></i>
+                <span><%= @clip.posted_at.strftime("%d-%m-%Y %H:%M:%S") %></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-tv"></i>
+                <span><%= @clip.station.name %></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transcription Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-file-text text-indigo-600"></i>
+            Transcripción
+          </h3>
+          <div class="prose prose-sm max-w-none">
+            <p class="text-gray-700 leading-relaxed">
+              <% if @clip.tag_list.present? %>
+                <%= highlight(@clip.transcription, @clip.all_tags_boundarys) -%>
+              <% else %>
+                <%= @clip.transcription %>
+              <% end %>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar - Right Column (1/3 on large screens) -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- Metadata Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Información</h3>
+          <dl class="space-y-4">
+            <div>
+              <dt class="text-sm font-medium text-gray-500 mb-1">Fecha</dt>
+              <dd class="text-sm text-gray-900">
+                <%= @clip.posted_at.strftime("%d-%m-%Y %H:%M:%S") %>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500 mb-1">Estación</dt>
+              <dd class="text-sm text-gray-900">
+                <%= @clip.station.name %>
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Tags Card -->
+        <% if @clip.all_tags.any? %>
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-tags text-indigo-600"></i>
+              Etiquetas y Variaciones
+            </h3>
+            <div class="flex flex-wrap gap-2">
+              <% @clip.all_tags.each do |tag| %>
+                <span class="inline-flex items-center rounded-md bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
+                  <%= tag %>
+                </span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</section>

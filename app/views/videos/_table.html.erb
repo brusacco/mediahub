@@ -1,49 +1,82 @@
-<link href="https://cdn.datatables.net/v/dt/jq-3.7.0/dt-2.1.6/datatables.min.css" rel="stylesheet">
-<script src="https://cdn.datatables.net/v/dt/jq-3.7.0/dt-2.1.6/datatables.min.js"></script>
+<% content_for :extra_stylesheets do %>
+  <link href="https://cdn.datatables.net/v/dt/jq-3.7.0/dt-2.1.6/datatables.min.css" rel="stylesheet">
+  <style>
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+      color: inherit !important;
+      border: none !important;
+      background: none !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+      background: none !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+      color: inherit !important;
+    }
+  </style>
+<% end %>
 
-<h2 class="text-2xl font-bold tracking-tight text-gray-900"><%=title%></h2>
-<table id="videos" class="min-w-full divide-y divide-gray-300">
-  <thead>
-    <tr>
-      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Fecha</th>
-      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Imagen</th>
-      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Transcripcion</th>
-      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Etiquetas y Variaciones</th>
-      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Estacion</th>
-    </tr>
-  </thead>
-  <tbody class="bg-white">
-    <% videos.each do |video| %>
-      <tr class="even:bg-gray-50">
-        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500" data-sort="<%= video.posted_at.strftime("%Y%m%d%H%M%s") %>"><%= video.posted_at.strftime("%d-%m-%Y %H:%M") %></td>
-        <td class="px-3 py-4 text-sm text-gray-500">
-          <%= link_to image_tag("/#{video.thumbnail_path}", size: 480, loading: 'lazy', onerror: 'this.onerror=null;this.src="https://via.placeholder.com/300x250";'), video_path(video), target: '_blank' %>
-        </td>
-        <td class="px-3 py-4 text-gray-500">     
-          <% if video.tag_list.present? %>
-            <%= highlight(video.transcription, video.all_tags_boundarys) -%>
-          <% else %>
-            <%= video.transcription %>
-          <% end %>
-        </td>
-        <td class="px-3 py-4 text-xs text-gray-500"><%= video.all_tags.join(', ') %></td>
-        <td class="whitespace-nowrap px-3 py-4 text-xs text-gray-500"><%= video.station.name %></td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<% content_for :extra_javascripts do %>
+  <script src="https://cdn.datatables.net/v/dt/jq-3.7.0/dt-2.1.6/datatables.min.js"></script>
+<% end %>
 
-<script>
-  // document.addEventListener('turbo:load', function () {
-  $(document).ready( function () {
-    var datatablesLanguage = "/datatables_locales/es-ES.json" 
-    new DataTable('#videos', {
-      order: [[0, 'desc']],
-      language: {
-        url: datatablesLanguage,
-      },
-      "pageLength": 25,
-      "lengthChange": false
-    });
-  });
-</script>
+<div class="mb-8">
+  <h2 class="text-2xl font-bold tracking-tight text-gray-900 mb-6"><%= title %></h2>
+  <div class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg overflow-hidden">
+    <div class="p-6">
+      <div data-controller="datatable">
+        <table id="videos-table" class="videos-datatable min-w-full divide-y divide-gray-300 display cell-border" style="width:100%">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Fecha</th>
+              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Imagen</th>
+              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Transcripcion</th>
+              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Etiquetas y Variaciones</th>
+              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Estacion</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% videos.each do |video| %>
+              <tr class="hover:bg-gray-50 transition-colors duration-150">
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 font-medium" data-sort="<%= video.posted_at.strftime("%Y%m%d%H%M%s") %>">
+                  <time datetime="<%= video.posted_at.iso8601 %>">
+                    <%= video.posted_at.strftime("%d-%m-%Y") %>
+                  </time>
+                  <div class="text-xs text-gray-500 mt-1">
+                    <%= video.posted_at.strftime("%H:%M") %>
+                  </div>
+                </td>
+                <td class="px-3 py-4 text-sm text-gray-500">
+                  <%= link_to image_tag("/#{video.thumbnail_path}", size: 480, loading: 'lazy', onerror: 'this.onerror=null;this.src="https://via.placeholder.com/300x250";'), video_path(video), class: "hover:opacity-80 transition-opacity" %>
+                </td>
+                <td class="px-3 py-4 text-sm text-gray-900">     
+                  <% if video.tag_list.present? %>
+                    <%= highlight(video.transcription, video.all_tags_boundarys) -%>
+                  <% else %>
+                    <%= video.transcription %>
+                  <% end %>
+                </td>
+                <td class="px-3 py-4 text-xs">
+                  <div class="flex flex-wrap gap-1">
+                    <% video.all_tags.first(5).each do |tag| %>
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <%= tag %>
+                      </span>
+                    <% end %>
+                    <% if video.all_tags.count > 5 %>
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                        +<%= video.all_tags.count - 5 %>
+                      </span>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
+                  <%= video.station.name %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

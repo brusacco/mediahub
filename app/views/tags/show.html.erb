@@ -1,41 +1,121 @@
-<header class="bg-white shadow-sm">
-  <div class="mx-auto px-4 py-4 sm:px-6 lg:px-8">
-    <h1 class="text-lg font-semibold leading-6 text-gray-900">Etiqueta: <%= @tag.name %></h1>
-  </div>
-</header>
-<main>
-  <div class="mx-auto py-4 sm:px-6 lg:px-8">
-
-    <div class="m-2">
-      <p class="text-xl leading-8">La etiqueta <b><%= @tag.name %></b> en los ultimos <b><%= DAYS_RANGE %> días</b> 
-      cuenta con un total de <b><%= number_with_delimiter(@total_videos, delimiter: ".")%></b> clips.
-    </div>
-    <hr>
-
-    <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8">
-      <h3>Análisis de los últimos <%= DAYS_RANGE %> días</h3>
-      <%= column_chart @videos.group_by_day(:posted_at).count, xtitle: "Fecha", ytitle: "Cant. Clips", label: "Clips", colors: ['blue'] %>
-    </div>
-    <hr>
-
-    <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8">
-      <div class="flex flex-wrap -mx-2">
-        <div class="w-full sm:w-1/2 px-2 mb-4 sm:mb-0">
-          <div class="overflow-hidden bg-white shadow sm:rounded-lg">
-            <h3 class="mx-5 my-5 font-bold tracking-tight text-gray-900">Cantidad de Clips por estacion</h3>
-            <%= pie_chart @videos.group("stations.name").count('*'), donut: true %>
-          </div>
-        </div>
-        <div class="w-full sm:w-1/2 px-2 mb-4 sm:mb-0">
-          <div class="overflow-hidden bg-white shadow sm:rounded-lg">
-            <h3 class="mx-5 my-5 font-bold tracking-tight text-gray-900">Cantidad de Clips por Tag Relacionados</h3>
-            <%= pie_chart @tags_count, donut: true %>
-          </div>
-        </div>
+<!-- Enhanced Header -->
+<header class="bg-white shadow-sm border-b border-gray-200">
+  <div class="max-w-full mx-auto px-4 py-6 sm:px-6 lg:px-12 xl:px-16">
+    <div class="md:flex md:items-center md:justify-between">
+      <div class="flex-1 min-w-0">
+        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">
+          <i class="fas fa-tag text-indigo-500 mr-2" aria-hidden="true"></i><%= @tag.name %>
+        </h1>
+        <p class="mt-1 text-sm text-gray-600">
+          La etiqueta en los últimos <%= DAYS_RANGE %> días cuenta con un total de 
+          <span class="font-semibold text-indigo-600"><%= number_with_delimiter(@total_videos, delimiter: ".") %></span> clips.
+        </p>
+      </div>
+      <div class="mt-4 flex flex-col sm:flex-row gap-2 md:mt-0 md:ml-4">
+        <button onclick="window.print()" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+          <i class="fa-solid fa-print mr-2"></i>
+          Imprimir PDF
+        </button>
       </div>
     </div>
-    <hr>
+  </div>
+</header>
 
+<!-- Breadcrumbs -->
+<%= render 'shared/breadcrumbs', items: [
+  { label: 'Inicio', path: root_path, icon: 'fa-solid fa-home' },
+  { label: 'Etiquetas', path: nil },
+  { label: @tag.name, path: nil, current: true }
+] %>
+
+<!-- Sticky Navigation -->
+<%= render 'shared/sticky_nav', nav_items: [
+  { href: '#kpis', text: 'Métricas', icon: 'fa-solid fa-gauge-high', label: 'Ir a sección de métricas clave' },
+  { href: '#temporal', text: 'Temporal', icon: 'fa-solid fa-clock', label: 'Ir a análisis temporal' },
+  { href: '#distribucion', text: 'Distribución', icon: 'fa-solid fa-chart-pie', label: 'Ir a distribución de contenido' },
+  { href: '#estaciones', text: 'Estaciones', icon: 'fa-solid fa-building', label: 'Ir a estaciones destacadas' },
+  { href: '#videos-section', text: 'Videos', icon: 'fa-solid fa-video', label: 'Ir a tabla de videos' },
+  { href: '#bigramas', text: 'Bigramas', icon: 'fa-solid fa-comments', label: 'Ir a análisis de bigramas' },
+  { href: '#nube-palabras', text: 'Nube', icon: 'fa-solid fa-cloud', label: 'Ir a nube de palabras' },
+  { href: '#etiquetas', text: 'Etiquetas', icon: 'fa-solid fa-tags', label: 'Ir a etiquetas relacionadas' }
+] %>
+
+<!-- Main Content -->
+<main class="bg-gray-50 min-h-screen">
+  <div class="max-w-full mx-auto py-8 px-4 sm:px-6 lg:px-12 xl:px-16">
+
+    <!-- KPI Cards -->
+    <section class="mb-8" id="kpis">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <%= render 'shared/kpi_card', 
+              title: 'Clips',
+              icon: 'fa-solid fa-video',
+              value: number_with_delimiter(@total_videos, delimiter: "."),
+              description: "Clips etiquetados con esta etiqueta en los últimos #{DAYS_RANGE} días." %>
+        
+        <%= render 'shared/kpi_card',
+              title: 'Estaciones',
+              icon: 'fa-solid fa-tower-broadcast',
+              value: @videos.joins(:station).distinct.count('stations.id'),
+              description: "Estaciones diferentes que han mencionado esta etiqueta." %>
+        
+        <%= render 'shared/kpi_card',
+              title: 'Etiquetas Relacionadas',
+              icon: 'fa-solid fa-tags',
+              value: @tags.size,
+              description: "Etiquetas relacionadas encontradas en los clips." %>
+        
+        <%= render 'shared/kpi_card',
+              title: 'Palabras Únicas',
+              icon: 'fa-solid fa-font',
+              value: @word_occurrences.size,
+              description: "Palabras diferentes analizadas en las transcripciones." %>
+      </div>
+    </section>
+
+<!-- Section: Time Series Analysis -->
+<section class="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8" id="temporal">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+        Análisis Temporal
+      </h2>
+      <p class="mt-2 text-base text-gray-600">
+        Evolución de clips en los últimos <%= DAYS_RANGE %> días
+      </p>
+    </div>
+    <%= column_chart @videos.group_by_day(:posted_at).count, xtitle: "Fecha", ytitle: "Cant. Clips", label: "Clips", colors: ['indigo'] %>
+</section>
+
+<!-- Section: Distribution Charts -->
+<section class="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8" id="distribucion">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+        Distribución de Contenido
+      </h2>
+      <p class="mt-2 text-base text-gray-600">
+        Análisis de clips por estación y etiquetas relacionadas
+      </p>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+      <!-- Chart: Clips por Estación -->
+      <div class="bg-gray-50 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+          Clips por Estación
+        </h3>
+        <%= pie_chart @videos.group("stations.name").count('*'), donut: true %>
+      </div>
+      <!-- Chart: Clips por Tag -->
+      <div class="bg-gray-50 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+          Clips por Etiqueta Relacionada
+        </h3>
+        <%= pie_chart @tags_count, donut: true %>
+      </div>
+    </div>
+</section>
+
+<!-- Section: Top Stations -->
+<section class="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8" id="estaciones">
     <%= render partial: 'stations/station', 
               locals: { 
                 stations: @videos.group("stations.id, stations.name")
@@ -44,38 +124,70 @@
                                   .take(10)
                                   .map { |station, count| { station: Station.find_by(name: station), count: count } },
                 title: 'Las estaciones que más han mencionado esta Etiqueta fueron:' } %>
+</section>
 
-    <hr>
-    <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8">
-      <%= render partial: 'videos/table', locals: { videos: @videos, title: "Últimos Clips sobre #{@tag.name}" } %>
+<!-- Section: Recent Videos Table -->
+<section class="mb-8" id="videos-section">
+    <%= render partial: 'videos/table', locals: { videos: @videos, title: "Últimos Clips sobre #{@tag.name}" } %>
+</section>
+
+<!-- Section: Bigrams Analysis -->
+<section class="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8" id="bigramas">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+        Análisis de Bigramas
+      </h2>
+      <p class="mt-2 text-base text-gray-600">
+        Pares de palabras más frecuentes en los clips
+      </p>
     </div>
-
-    <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8">
-      <h2  class="text-2xl font-bold tracking-tight text-gray-900">Análisis de Bigramas en Clips:</h2>
+    <div class="flex flex-wrap gap-2">
       <%= render partial: "tags/tag_pill_array", collection: @bigram_occurrences, cached: true %>
-      <p><small class="text-muted px-1">*Cantidad de veces que aparecen bigramas en los clips</small></p>
     </div>
+    <p class="mt-4 text-sm text-gray-500">
+      *Cantidad de veces que aparecen bigramas en los clips
+    </p>
+</section>
 
-    <div class="overflow-hidden bg-white shadow sm:rounded-lg"></div>
-      <h2 class="text-2xl mx-5 my-5 font-bold tracking-tight text-gray-900">Nube de palabras de Clips</h2>
-      <div class="mt-2 mb-2 px-30 py-10 sm:p-6">
-        <% min_max = find_max_and_min_occurrences(@word_occurrences) %>
-        <ul class="cloud">
-          <% @word_occurrences.shuffle { |a, b| a[1] <=> b[1] }.each do |word, value| %>
-            <li data-weight="<%= normalize_to_scale(value, min_max[:max], min_max[:min]) %>"><%= word %></li>
-          <%end%>
-        </ul>
+<!-- Section: Word Cloud -->
+<section class="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8" id="nube-palabras">
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+        Nube de Palabras
+      </h2>
+      <p class="mt-2 text-base text-gray-600 max-w-2xl mx-auto">
+        Visualización de las palabras más frecuentes en los clips de esta etiqueta
+      </p>
+    </div>
+    <div class="min-h-[400px] flex items-center justify-center">
+      <% min_max = find_max_and_min_occurrences(@word_occurrences) %>
+      <ul class="cloud">
+        <% @word_occurrences.shuffle { |a, b| a[1] <=> b[1] }.each do |word, value| %>
+          <li data-weight="<%= normalize_to_scale(value, min_max[:max], min_max[:min]) %>"><%= word %></li>
+        <%end%>
+      </ul>
+    </div>
+</section>
+
+<!-- Section: Tags Appearance -->
+<% if @tags.any? %>
+  <section class="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8 no-print" id="etiquetas">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+          Aparición de Etiquetas
+        </h2>
+        <p class="mt-2 text-base text-gray-600">
+          Frecuencia de etiquetas relacionadas en los clips
+        </p>
       </div>
-    </div>
-
-    <% if @tags.any? %>
-      <hr>
-      <div class="mx-auto px-4 py-8 sm:px-6 sm:py-8 lg:px-8 no-print">
-        <h2 class="text-2xl font-bold tracking-tight text-gray-900">Aparicion de Etiquetas:</h2>
+      <div class="flex flex-wrap gap-2">
         <%= render partial: "tags/tag_pill", collection: @tags, cached: true %>
-        <p><small class="text-muted px-1">*Cantidad de veces que aparecen las etiquetas en los clips</small></p>
       </div>
-    <%end%>
+      <p class="mt-4 text-sm text-gray-500">
+        *Cantidad de veces que aparecen las etiquetas en los clips
+      </p>
+  </section>
+<% end %>
 
   </div>
 </main>

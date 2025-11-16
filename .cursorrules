@@ -1,0 +1,436 @@
+# MediaHub - Cursor Rules
+
+## Project Overview
+
+MediaHub is a Rails 7.1 application that records, transcribes, and analyzes video content from TV station streams. It uses automated tagging, topic tracking, and provides analytics dashboards for users.
+
+## Technology Stack
+
+- **Framework**: Rails 7.1.3+ (Ruby 3.3.0)
+- **Database**: SQLite3 (development), MySQL2 (production)
+- **Frontend**: Tailwind CSS, Stimulus, Turbo
+- **Admin**: ActiveAdmin with Devise authentication
+- **Background Processing**: Rake tasks with Whenever cron scheduler
+- **Video Processing**: FFmpeg for recording and thumbnail generation
+- **Transcription**: Whisper (external tool)
+- **Tagging**: acts-as-taggable-on gem
+- **Versioning**: PaperTrail
+- **Stream URL Capture**: Mitmproxy + Selenium WebDriver (see `Documents/MITMPROXY_INTEGRATION.md`)
+
+## Code Style & Conventions
+
+### Ruby/Rails Standards
+
+- Follow Rails conventions (fat models, thin controllers)
+- Use `frozen_string_literal: true` at the top of all Ruby files
+- Prefer scopes over class methods for querying
+- Use service objects for complex business logic (see `app/services/`)
+- Use `find_each` for batch processing large datasets
+- Always handle errors gracefully with proper logging
+
+### Naming Conventions
+
+- Models: Singular, PascalCase (e.g., `Video`, `Station`, `Topic`)
+- Controllers: Plural, PascalCase (e.g., `VideosController`)
+- Services: Namespaced under `TaggerServices::` or similar
+- Rake tasks: Use descriptive namespaces (e.g., `stream:listen`)
+
+### File Organization
+
+- Models: `app/models/`
+- Controllers: `app/controllers/`
+- Services: `app/services/` (namespaced modules)
+- Rake tasks: `lib/tasks/`
+- Background jobs: Use rake tasks, not ActiveJob (legacy system)
+- **Scripts**: Python scripts (e.g., `capture_m3u8.py`) stay in project root
+- **Documentation**: ALL documentation files (`.md`, `.txt`, etc.) MUST be created in `Documents/` directory
+  - Never create documentation files in the project root
+  - Always use `Documents/` folder for any documentation, guides, analysis, or reference materials
+  - Exception: `README.md` stays in project root
+
+## Key Domain Concepts
+
+### Core Models
+
+1. **Station**: TV stations with stream URLs
+
+   - Has many videos
+   - Tracks stream status (connected/disconnected)
+   - Has directory for file organization
+
+2. **Video**: Recorded video segments (60-second chunks)
+
+   - Belongs to station
+   - Has transcription text
+   - Tagged with multiple tags
+   - Has thumbnail and public path
+
+3. **Tag**: Keywords extracted from transcriptions
+
+   - Has variations (alternative spellings/forms)
+   - Many-to-many with Topics
+   - Used for content discovery
+
+4. **Topic**: User-defined subjects of interest
+
+   - Has many tags
+   - Has many users (subscriptions)
+   - Tracks daily statistics
+
+5. **User**: End users who subscribe to topics
+   - Devise authentication
+   - Has many topics through user_topics
+
+### Important Constants
+
+- `DAYS_RANGE = 7`: Default time range for queries (7 days)
+- `STOP_WORDS`: Loaded from `stop-words.txt`, used for text analysis
+
+## Common Patterns
+
+### Video Processing Workflow
+
+1. **Stream Recording** (New Architecture - Process-per-station):
+
+   - **Individual station**: `rake stream:listen_station[STATION_ID]` (worker process for single station)
+   - **Orchestrator**: `rake stream:orchestrator` (monitors and manages all stations)
+   - **Development mode** (macOS): `rake stream:dev:start[ID]`, `rake stream:dev:stop[ID]`, `rake stream:dev:status`
+   - **Production mode** (Linux/systemd): `rake stream:systemd:install[ID]`, `rake stream:systemd:start[ID]`
+   - Features: Real-time disconnection detection, heartbeat monitoring, automatic reconnection
+   - Legacy: `rake stream:listen` (deprecated, multi-threaded approach)
+
+2. **Process Videos**: `rake process_videos` (runs every minute, wrapper task)
+
+   - Import videos: `rake import_videos` (moves from temp/ to organized folders)
+   - Generate transcriptions: `rake generate_transcription` (parallel processing with Whisper-ctranslate2)
+   - Cleanup: `rake remove_fail_videos` (removes failed videos)
+
+3. **Tag Videos**: `rake tagger` (runs every 5 minutes, extracts tags from transcriptions)
+
+   - Uses `TaggerServices::ExtractTags` service
+   - Processes videos from last 3 months
+   - Case-sensitive exact matching
+
+4. **Generate Thumbnails**: Automatic during import
+
+5. **Topic Statistics**: `rake topic_stat_daily` (runs hourly)
+
+6. **Update Stream URLs**: `rake stream:update_stream_url[STATION_ID]` (updates stream URL via mitmproxy)
+   - Uses `StreamUrlUpdateService` with mitmproxy integration
+   - Requires mitmproxy running: `mitmproxy --listen-port 8080 --mode regular -s capture_m3u8.py`
+   - Captures `.m3u8` URLs from all HTTP/HTTPS traffic (iframes, JS, MSE, etc.)
+   - See `Documents/MITMPROXY_INTEGRATION.md` for details
+
+7. **Development Cleanup** (development only):
+   - `rake dev:cleanup:videos` - Clean all videos and files
+   - `rake dev:cleanup:video_files` - Clean only files (keeps DB records)
+   - `rake dev:cleanup:video_records` - Clean only DB records (keeps files)
+   - `rake dev:cleanup:temp_directories` - Clean temp directories
+
+### Tag Extraction
+
+- Uses `TaggerServices::ExtractTags` service
+- Matches tags and variations against transcription text
+- Uses word boundary regex (`\b`) for accurate matching
+- Tags are stored using `acts-as-taggable-on`
+
+### Background Tasks (Cron Schedule)
+
+- **Continuous**: `stream:orchestrator` (monitors stations, manages processes/services)
+- Every 1 minute: `process_videos` (import, transcription, cleanup)
+- Every 5 minutes: `tagger` (extract tags from transcriptions)
+- Every hour: `topic_stat_daily` (calculate daily statistics)
+- **Manual/On-demand**: `stream:update_stream_url[STATION_ID]` (requires mitmproxy running)
+
+## Development Guidelines
+
+### JavaScript & Stimulus
+
+**CRITICAL RULE: Always use Stimulus controllers for ALL JavaScript functionality.**
+
+- **NEVER write vanilla JavaScript** in `<script>` tags or inline event handlers
+- **NEVER use jQuery** or direct DOM manipulation outside of Stimulus controllers
+- **ALL interactive JavaScript** must be implemented as Stimulus controllers
+- Controllers should be placed in `app/javascript/controllers/`
+- Use Stimulus data attributes (`data-controller`, `data-action`, `data-target`) in views
+- Controllers should be focused and single-purpose
+- Use Stimulus lifecycle callbacks (`connect`, `disconnect`) appropriately
+- Leverage Stimulus values and targets for data binding
+
+**Stimulus Controller Structure:**
+
+```javascript
+// app/javascript/controllers/menu_controller.js
+import { Controller } from "@hotwired/stimulus"
+
+export default class extends Controller {
+  static targets = ["menu"]
+  static values = { open: Boolean }
+
+  connect() {
+    // Initialization code
+  }
+
+  toggle() {
+    // Action method
+  }
+
+  disconnect() {
+    // Cleanup code
+  }
+}
+```
+
+**View Usage:**
+
+```erb
+<div data-controller="menu" data-menu-open-value="false">
+  <button data-action="click->menu#toggle">Toggle</button>
+  <div data-menu-target="menu" class="hidden">Menu content</div>
+</div>
+```
+
+**Benefits:**
+- Automatic cleanup when elements are removed from DOM
+- Works seamlessly with Turbo navigation
+- Declarative and maintainable
+- Testable and reusable
+
+### Service Objects Pattern
+
+**CRITICAL RULE: Always implement business logic and processes using service objects.**
+
+- **All business logic** must be in service objects, not in controllers, rake tasks, or models
+- **All complex processes** (imports, exports, transformations, calculations) must use services
+- Rake tasks should be thin wrappers that call services
+- Controllers should delegate to services, not contain business logic
+- Models should contain only data-related logic (validations, scopes, associations)
+
+**Service Structure:**
+
+- Services inherit from `ApplicationService`
+- Use `call` class method: `MyService.call(params)`
+- Return `OpenStruct` with `success?` and `data` or `error`
+- Place services in `app/services/` with appropriate namespacing
+
+**Example:**
+
+```ruby
+# app/services/video_import_service.rb
+class VideoImportService < ApplicationService
+  def self.call(station, file)
+    new(station, file).call
+  end
+
+  def initialize(station, file)
+    @station = station
+    @file = file
+  end
+
+  def call
+    # Business logic here
+    handle_success(result)
+  rescue StandardError => e
+    handle_error(e.message)
+  end
+end
+
+# In rake task or controller:
+result = VideoImportService.call(station, file)
+if result.success?
+  # handle success
+else
+  # handle error
+end
+```
+
+### Adding New Features
+
+1. Create migrations for schema changes
+2. Update models with associations and validations
+3. Add scopes for common queries
+4. **Create service objects for ALL business logic and processes**
+5. Add rake tasks for background processing (thin wrappers calling services)
+6. Update ActiveAdmin resources for admin interface
+
+### Working with Videos
+
+- Videos are stored in `public/videos/{station.directory}/{year}/{month}/{day}/`
+- Temp files are in `public/videos/{station.directory}/temp/`
+- Always check if file is in use before processing (`in_use?` helper)
+- Validate video files with `ffprobe` before importing
+- Use `Open3.capture3` for shell commands
+
+### Working with Tags
+
+- Tags must be unique (validated)
+- Use variations for alternative spellings/forms
+- Tag matching uses word boundaries for accuracy
+- Tags are case-insensitive in matching
+
+### Working with Stream URLs
+
+- **Stream URL Updates**: Use `StreamUrlUpdateService` with mitmproxy integration
+- **Mitmproxy Setup**: Must be running before executing `stream:update_stream_url[STATION_ID]`
+  - Command: `mitmproxy --listen-port 8080 --mode regular -s capture_m3u8.py`
+  - Log file: `/tmp/mitm_m3u8.log` (automatically cleared before each run)
+- **Service Flow**: Clear log → Navigate → Wait → Click play (if configured) → Auto-play fallback → Wait → Read log → Select best URL → Update station
+- **Play Button**: If `play_button_selector` is set on station, service will click it before capturing URLs (some players require explicit click)
+- **Auto-play Fallback**: If no play button selector, service attempts to mute and play videos automatically via JavaScript
+- **URL Selection Priority**: Reference pattern match > Auth params > playlist.m3u8 > Longest URL
+- **Chrome Configuration**: Uses `--proxy-server=http://127.0.0.1:8080` with SSL certificate ignore flags
+- See `Documents/MITMPROXY_INTEGRATION.md` for complete documentation
+
+### Error Handling
+
+- Always wrap file operations in begin/rescue blocks
+- Log errors with `Rails.logger.error`
+- Use `handle_error`/`handle_success` pattern in services
+- Don't fail silently - log and continue when appropriate
+
+## Testing Considerations
+
+- System uses Minitest (not RSpec)
+- Test files in `test/` directory
+- Fixtures available for all models
+- Use system tests for integration testing
+
+## Performance Notes
+
+- Use `find_each` for batch processing (prevents memory issues)
+- Videos are processed in batches by date range
+- Tag extraction processes videos from last 3 months
+- Consider adding database indexes for frequently queried fields
+
+## Security Considerations
+
+- User authentication via Devise
+- Admin authentication via ActiveAdmin/Devise
+- CSRF protection enabled (except for deploy endpoint)
+- File paths should be validated to prevent directory traversal
+
+## Deployment Notes
+
+- Production uses MySQL2
+- Apache2 reverse proxy configuration
+- SSL via Let's Encrypt (Certbot)
+- Puma server runs as daemon
+- Deployment via webhook (`/deploy` endpoint)
+
+## Common Commands
+
+```bash
+# Import videos from temp directories
+RAILS_ENV=production rake import_videos
+
+# Generate transcriptions (external)
+whisper-ctranslate2 *.mp4 --language Spanish --output_format txt
+
+# Tag videos
+RAILS_ENV=production rake tagger
+
+# Start stream recording
+RAILS_ENV=production rake stream:listen
+
+# Generate daily topic stats
+RAILS_ENV=production rake topic_stat_daily
+
+# Update stream URL for a station (requires mitmproxy running)
+# First, start mitmproxy:
+mitmproxy --listen-port 8080 --mode regular -s capture_m3u8.py
+# Then, in another terminal:
+bundle exec rake 'stream:update_stream_url[STATION_ID]'
+```
+
+## Documentation Standards
+
+- **ALL documentation files MUST be created in `Documents/` directory**
+  - This includes: `.md`, `.txt`, analysis documents, guides, reference materials
+  - Exception: `README.md` stays in project root (standard convention)
+- When creating new documentation:
+  - Always use `Documents/` folder path
+  - Use descriptive filenames (e.g., `WHISPER_MODELS_COMPARISON.md`, `FFMPEG_CONFIG.md`)
+  - Keep documentation organized and up-to-date
+- Never create documentation files in project root or other directories
+
+## When Making Changes
+
+- Always check existing rake tasks before creating new ones
+- Follow the established service object pattern
+- Update ActiveAdmin resources when adding new models
+- Consider adding paper_trail versioning for important models
+- Test file operations with proper error handling
+- Update documentation when adding significant features (in `Documents/` folder)
+
+## Code Review Requirements
+
+As a Senior Ruby on Rails developer, perform a detailed code review of ALL changes before finalizing them. Focus on:
+
+### 🧩 Proper Separation of Concerns
+
+- Check if business logic, controller logic, and view logic are clearly separated and correctly placed
+- Business logic should be in models or service objects, not controllers
+- Controllers should be thin and delegate to services/models
+- Views should only handle presentation logic
+
+### 🔁 DRY Principles
+
+- Identify any repetition that could be extracted into helpers, concerns, or reusable methods
+- Look for duplicated code patterns that can be abstracted
+- Ensure shared functionality is properly extracted
+
+### 🧼 Code Quality & Clean Code
+
+- Ensure naming clarity (methods, variables, classes should be self-documenting)
+- Verify methods are concise and focused on a single responsibility
+- Check readability and consistent Ruby/Rails idioms
+- Follow Ruby style guide conventions
+
+### 🧭 Rails Best Practices
+
+- Verify adherence to conventions:
+  - Fat models / skinny controllers
+  - RESTful routes
+  - Appropriate use of callbacks
+  - Proper validations
+  - Scopes for common queries
+  - Use of `find_each` for batch operations
+- Check for proper use of ActiveRecord associations
+- Ensure migrations are reversible when possible
+
+### ⚙️ Performance & Scalability
+
+- Look for N+1 queries and suggest `includes`/`joins`/`preload` solutions
+- Identify unnecessary data loading (selecting all columns when only a few are needed)
+- Check for inefficient code paths or algorithms
+- Consider database indexes for frequently queried fields
+- Review batch processing for large datasets
+
+### 🧠 Maintainability
+
+- Assess whether the code will be easy to extend, test, and debug later
+- Check for proper error handling and logging
+- Ensure code is well-documented where complex logic exists
+- Verify that changes don't break existing functionality
+
+### Review Summary Format
+
+After reviewing code changes, provide:
+
+1. **Overall Assessment**: Clean ✅ | Needs Improvement ⚠️ | Problematic ❌
+
+2. **Specific Issues Found** (grouped by category):
+
+   - Separation of Concerns issues
+   - DRY violations
+   - Code quality concerns
+   - Rails best practices violations
+   - Performance issues
+   - Maintainability concerns
+
+3. **Concrete Recommendations**:
+   - Actionable steps or refactor suggestions
+   - Specific code improvements
+   - Alternative approaches if applicable
+
+**IMPORTANT**: Every code change must pass this review before being considered complete. If issues are found, fix them before proceeding.

@@ -1,0 +1,40 @@
+<% items ||= [] %>
+
+<% if items.any? %>
+  <nav class="bg-gray-50 border-b border-gray-200" aria-label="Breadcrumb">
+    <div class="max-w-full mx-auto px-4 py-3 sm:px-6 lg:px-12 xl:px-16">
+      <ol class="flex items-center space-x-2 flex-wrap">
+        <% items.each_with_index do |item, index| %>
+          <li class="flex items-center">
+            <% if index > 0 %>
+              <svg class="flex-shrink-0 w-4 h-4 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+              </svg>
+            <% end %>
+            
+            <% if item[:current] %>
+              <span class="text-sm font-medium text-gray-900" aria-current="page">
+                <%= item[:label] %>
+              </span>
+            <% elsif item[:path] %>
+              <%= link_to item[:path], class: "text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors" do %>
+                <% if item[:icon] %>
+                  <i class="<%= item[:icon] %> mr-1" aria-hidden="true"></i>
+                <% end %>
+                <%= item[:label] %>
+              <% end %>
+            <% else %>
+              <span class="text-sm font-medium text-gray-600">
+                <% if item[:icon] %>
+                  <i class="<%= item[:icon] %> mr-1" aria-hidden="true"></i>
+                <% end %>
+                <%= item[:label] %>
+              </span>
+            <% end %>
+          </li>
+        <% end %>
+      </ol>
+    </div>
+  </nav>
+<% end %>
+

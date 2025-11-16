@@ -2,12 +2,136 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
-
 @layer components {
   .btn-primary {
     @apply py-2 px-4 bg-blue-200;
   }
-}
 
-*/
+  /* DataTables Tailwind Integration */
+  .dataTables_wrapper {
+    @apply w-full;
+  }
+
+  .dataTables_length,
+  .dataTables_filter,
+  .dataTables_info,
+  .dataTables_paginate {
+    @apply mb-4;
+  }
+
+  .dataTables_filter {
+    @apply float-right mb-4;
+  }
+
+  .dataTables_filter label {
+    @apply flex items-center space-x-2 text-sm font-medium text-gray-700;
+  }
+
+  .dataTables_filter input {
+    @apply ml-2 block rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2;
+  }
+
+  .dataTables_length {
+    @apply float-left mb-4;
+  }
+
+  .dataTables_length label {
+    @apply flex items-center space-x-2 text-sm font-medium text-gray-700;
+  }
+
+  .dataTables_length select {
+    @apply mx-2 block rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2;
+  }
+
+  .dataTables_info {
+    @apply float-left text-sm text-gray-700 mt-2;
+  }
+
+  .dataTables_paginate {
+    @apply float-right mt-2;
+  }
+
+  .dataTables_paginate .paginate_button {
+    @apply inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 hover:text-gray-700 cursor-pointer;
+  }
+
+  .dataTables_paginate .paginate_button.current {
+    @apply bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700;
+  }
+
+  .dataTables_paginate .paginate_button.disabled {
+    @apply text-gray-300 cursor-not-allowed hover:bg-white hover:text-gray-300;
+  }
+
+  .dataTables_paginate .paginate_button:first-child {
+    @apply rounded-l-md;
+  }
+
+  .dataTables_paginate .paginate_button:last-child {
+    @apply rounded-r-md;
+  }
+
+  .dataTables_paginate .paginate_button:not(:first-child) {
+    @apply -ml-px;
+  }
+
+  /* Enhanced pagination styles */
+  .dataTables_paginate {
+    @apply flex justify-end mt-4;
+  }
+
+  .dataTables_paginate .pagination {
+    @apply inline-flex shadow-sm;
+  }
+
+  .dataTables_paginate .paginate_button {
+    @apply relative inline-flex items-center px-3 py-2 text-sm font-medium border transition-colors duration-150 !important;
+  }
+
+  .dataTables_paginate .paginate_button:not(.current):not(.disabled) {
+    @apply text-gray-500 bg-white border-gray-300 hover:bg-gray-50 hover:text-gray-700 hover:border-gray-400 cursor-pointer !important;
+  }
+
+  .dataTables_paginate .paginate_button.current {
+    @apply z-10 bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700 !important;
+  }
+
+  .dataTables_paginate .paginate_button.disabled {
+    @apply text-gray-300 bg-gray-50 border-gray-300 cursor-not-allowed !important;
+  }
+
+  .dataTables_paginate .paginate_button:first-child {
+    @apply rounded-l-md !important;
+  }
+
+  .dataTables_paginate .paginate_button:last-child {
+    @apply rounded-r-md !important;
+  }
+
+  .dataTables_paginate .paginate_button:not(:first-child) {
+    @apply -ml-px !important;
+  }
+
+  table.dataTable thead th {
+    @apply bg-gray-50;
+  }
+
+  table.dataTable thead th.sorting,
+  table.dataTable thead th.sorting_asc,
+  table.dataTable thead th.sorting_desc {
+    @apply cursor-pointer select-none;
+  }
+
+  table.dataTable tbody tr:hover {
+    @apply bg-gray-50;
+  }
+
+  .dataTables_empty {
+    @apply text-center py-8 text-gray-500;
+  }
+
+  /* Loading state */
+  .dataTables_processing {
+    @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-lg px-6 py-4 z-10;
+  }
+}

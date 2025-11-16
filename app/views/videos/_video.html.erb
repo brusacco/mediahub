@@ -1,18 +1,42 @@
-<div class="group relative rounded-md">
-  <div class="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-80">
-    <%= link_to image_tag("/#{video.thumbnail_path}", size: 150, loading: 'lazy', class: 'h-full w-full object-cover object-center lg:h-full lg:w-full', onerror: 'this.onerror=null;this.src="https://via.placeholder.com/300x250";'), video_path(video), target: '_blank' %>
+<div class="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden">
+  <!-- Thumbnail -->
+  <div class="aspect-video w-full overflow-hidden bg-gray-100">
+    <%= link_to video_path(video), class: 'block h-full w-full' do %>
+      <%= image_tag("/#{video.thumbnail_path}", loading: 'lazy', class: 'h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-300', onerror: 'this.onerror=null;this.src="https://via.placeholder.com/300x250";') %>
+      <!-- Play Overlay -->
+      <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300">
+        <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <i class="fa-regular fa-circle-play text-white text-4xl"></i>
+        </div>
+      </div>
+    <% end %>
   </div>
-  <div class="mt-4 flex justify-between">
-    <div>
-      <h3 class="px-1 text-sm">
-        <i class="fa-regular fa-circle-play"></i> <%= video.station.name %>
+  
+  <!-- Video Info -->
+  <div class="p-4">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="text-sm font-medium text-gray-900 truncate flex items-center gap-2">
+        <i class="fa-regular fa-circle-play text-indigo-600"></i>
+        <span class="truncate"><%= video.station.name %></span>
       </h3>
-      <hr>
-      <p class="card-text">
-        <small class="text-muted px-1"><%= icon('fa-regular', 'calendar') %>
-          <%= video.posted_at.strftime('%d-%m-%Y') %>
-        </small>
-      </p>
     </div>
+    <div class="flex items-center text-xs text-gray-500 mb-3">
+      <i class="fa-regular fa-calendar mr-2"></i>
+      <span><%= video.posted_at.strftime('%d-%m-%Y %H:%M') %></span>
+    </div>
+    <% if video.all_tags.any? %>
+      <div class="flex flex-wrap gap-1">
+        <% video.all_tags.first(3).each do |tag| %>
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            <%= tag %>
+          </span>
+        <% end %>
+        <% if video.all_tags.count > 3 %>
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+            +<%= video.all_tags.count - 3 %>
+          </span>
+        <% end %>
+      </div>
+    <% end %>
   </div>
 </div>

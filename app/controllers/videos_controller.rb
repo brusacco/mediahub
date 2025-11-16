@@ -3,8 +3,7 @@ class VideosController < ApplicationController
 
   def show
     @clip = Video.find(params[:id])
-
-    host = 'https://mediahub.com.py/'
-    @clip_path = host + @clip.public_path
+    # Use relative path for video URL (works in both development and production)
+    @clip_path = "/#{@clip.public_path}"
   end
 end

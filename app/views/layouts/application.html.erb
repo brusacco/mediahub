@@ -8,7 +8,9 @@
     <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= yield :extra_stylesheets if content_for?(:extra_stylesheets) %>
     <%= javascript_importmap_tags %>
+    <%= yield :extra_javascripts if content_for?(:extra_javascripts) %>
     <%#= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
   </head>
 
