@@ -1,0 +1,64 @@
+<% if videos.any? %>
+  <div class="space-y-4">
+    <% videos.each do |video| %>
+      <div class="flex items-start space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+        <div class="flex-shrink-0">
+          <%= link_to video_path(video), class: "block" do %>
+            <%= image_tag("/#{video.thumbnail_path}", 
+                  size: "120x80", 
+                  loading: 'lazy', 
+                  class: 'rounded-md object-cover',
+                  onerror: 'this.onerror=null;this.src="https://via.placeholder.com/120x80";') %>
+          <% end %>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <%= link_to video_path(video), class: "block group" do %>
+                <h4 class="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                  <%= video.station.name %>
+                </h4>
+                <p class="mt-1 text-xs text-gray-500">
+                  <%= video.posted_at.strftime("%d-%m-%Y %H:%M") %>
+                </p>
+              <% end %>
+              <% if video.transcription.present? %>
+                <p class="mt-2 text-sm text-gray-600 line-clamp-2">
+                  <%= truncate(video.transcription, length: 150) %>
+                </p>
+              <% end %>
+              <% if video.all_tags.any? %>
+                <div class="mt-2 flex flex-wrap gap-1">
+                  <% video.all_tags.first(3).each do |tag| %>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                      <%= tag %>
+                    </span>
+                  <% end %>
+                  <% if video.all_tags.count > 3 %>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                      +<%= video.all_tags.count - 3 %>
+                    </span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+            <div class="ml-4 flex-shrink-0">
+              <%= link_to video_path(video), 
+                    class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors" do %>
+                <i class="fa-solid fa-play mr-1"></i>
+                Ver
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="text-center py-12">
+    <i class="fa-solid fa-video text-gray-400 text-4xl mb-4"></i>
+    <p class="text-gray-500 text-lg font-medium">No hay clips para esta fecha</p>
+    <p class="text-gray-400 text-sm mt-2"><%= date.strftime("%d de %B de %Y") %></p>
+  </div>
+<% end %>
+

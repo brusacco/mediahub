@@ -8,7 +8,245 @@
     <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <link href="https://code.highcharts.com/css/highcharts.css" rel="stylesheet">
     <%= yield :extra_stylesheets if content_for?(:extra_stylesheets) %>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/10.3.2/highcharts.js" crossorigin="anonymous"></script>
+    <script>
+      // ============================================
+      // Morfeo Professional Highcharts Configuration
+      // Unified, reusable chart styling and defaults
+      // ============================================
+
+      window.MorfeoCharts = {
+        // Professional color palette for data visualization
+        colors: [
+          '#3B82F6', // blue-500
+          '#10B981', // green-500
+          '#F59E0B', // amber-500
+          '#EF4444', // red-500
+          '#8B5CF6', // purple-500
+          '#EC4899', // pink-500
+          '#6366F1', // indigo-500
+          '#14B8A6', // teal-500
+          '#F97316', // orange-500
+          '#06B6D4'  // cyan-500
+        ],
+
+        // Default configuration for all charts
+        defaultOptions: {
+          chart: {
+            style: {
+              fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+            },
+            backgroundColor: 'transparent',
+            spacing: [20, 20, 20, 20]
+          },
+          
+          title: {
+            style: {
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#111827', // gray-900
+              letterSpacing: '-0.01em'
+            },
+            align: 'left'
+          },
+          
+          subtitle: {
+            style: {
+              fontSize: '14px',
+              fontWeight: '400',
+              color: '#6B7280' // gray-500
+            },
+            align: 'left'
+          },
+          
+          credits: {
+            enabled: false
+          },
+          
+          legend: {
+            align: 'center',
+            verticalAlign: 'bottom',
+            layout: 'horizontal',
+            itemStyle: {
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#6B7280' // gray-500
+            },
+            itemHoverStyle: {
+              color: '#111827' // gray-900
+            },
+            itemMarginBottom: 8,
+            symbolRadius: 6,
+            symbolHeight: 12,
+            symbolWidth: 12
+          },
+          
+          tooltip: {
+            backgroundColor: '#1F2937', // gray-800
+            borderColor: '#374151', // gray-700
+            borderRadius: 8,
+            borderWidth: 1,
+            shadow: {
+              color: 'rgba(0, 0, 0, 0.2)',
+              offsetX: 0,
+              offsetY: 2,
+              opacity: 0.5,
+              width: 4
+            },
+            style: {
+              color: '#F9FAFB', // gray-50
+              fontSize: '13px',
+              fontWeight: '400'
+            },
+            padding: 12,
+            useHTML: true
+          },
+          
+          xAxis: {
+            labels: {
+              style: {
+                fontSize: '12px',
+                color: '#6B7280', // gray-500
+                fontWeight: '400'
+              }
+            },
+            gridLineWidth: 1,
+            gridLineColor: '#E5E7EB', // gray-200
+            lineColor: '#D1D5DB', // gray-300
+            tickColor: '#D1D5DB' // gray-300
+          },
+          
+          yAxis: {
+            labels: {
+              style: {
+                fontSize: '12px',
+                color: '#6B7280', // gray-500
+                fontWeight: '400'
+              }
+            },
+            gridLineWidth: 1,
+            gridLineColor: '#E5E7EB', // gray-200
+            lineColor: '#D1D5DB', // gray-300
+            title: {
+              style: {
+                fontSize: '13px',
+                fontWeight: '500',
+                color: '#6B7280' // gray-500
+              }
+            }
+          },
+          
+          plotOptions: {
+            series: {
+              animation: {
+                duration: 800,
+                easing: 'easeOutQuart'
+              },
+              marker: {
+                radius: 4,
+                lineWidth: 2,
+                lineColor: '#FFFFFF'
+              },
+              states: {
+                hover: {
+                  lineWidthPlus: 1
+                }
+              }
+            },
+            column: {
+              borderRadius: 6,
+              borderWidth: 0,
+              pointPadding: 0.1,
+              groupPadding: 0.15
+            },
+            bar: {
+              borderRadius: 6,
+              borderWidth: 0,
+              pointPadding: 0.1,
+              groupPadding: 0.15
+            },
+            pie: {
+              borderWidth: 0,
+              borderColor: 'transparent',
+              dataLabels: {
+                enabled: true,
+                style: {
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  color: '#374151', // gray-700
+                  textOutline: 'none'
+                }
+              },
+              states: {
+                hover: {
+                  brightness: 0.1
+                }
+              }
+            },
+            area: {
+              fillOpacity: 0.1,
+              lineWidth: 2,
+              marker: {
+                radius: 3
+              }
+            }
+          }
+        },
+
+        // Apply default options globally to Highcharts
+        applyDefaults: function() {
+          if (typeof Highcharts !== 'undefined') {
+            Highcharts.setOptions({
+              colors: this.colors,
+              ...this.defaultOptions
+            });
+            console.log('Morfeo Charts: Default options applied to Highcharts');
+          } else {
+            console.warn('Morfeo Charts: Highcharts not loaded yet');
+          }
+        }
+      };
+
+      // ============================================
+      // Auto-initialization
+      // ============================================
+
+      // Wait for Highcharts to load
+      function waitForHighcharts(callback, maxAttempts = 50) {
+        let attempts = 0;
+        const checkInterval = setInterval(function() {
+          attempts++;
+          if (typeof Highcharts !== 'undefined') {
+            clearInterval(checkInterval);
+            console.log('Highcharts loaded successfully');
+            callback();
+          } else if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            console.error('Highcharts failed to load after ' + maxAttempts + ' attempts');
+          }
+        }, 100);
+      }
+
+      // Apply defaults when Highcharts is ready
+      if (typeof Highcharts !== 'undefined') {
+        MorfeoCharts.applyDefaults();
+      } else {
+        // Wait for Highcharts to load
+        waitForHighcharts(function() {
+          MorfeoCharts.applyDefaults();
+        });
+      }
+
+      // Reapply on Turbo navigation
+      document.addEventListener('turbo:load', function() {
+        console.log('turbo:load event fired for Highcharts');
+        waitForHighcharts(function() {
+          MorfeoCharts.applyDefaults();
+        });
+      });
+    </script>
     <%= javascript_importmap_tags %>
     <%= yield :extra_javascripts if content_for?(:extra_javascripts) %>
     <%#= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>

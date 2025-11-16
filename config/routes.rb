@@ -12,8 +12,16 @@ Rails.application.routes.draw do
   
   post 'home/merge_videos', to: 'home#merge_videos'
   
-  resources :topics, only: [:show]
-  resources :tags, only: [:show]
+  resources :topics, only: [:show] do
+    collection do
+      get 'videos_by_date'
+    end
+  end
+  resources :tags, only: [:show] do
+    collection do
+      get 'videos_by_date'
+    end
+  end
   resources :videos, only: [:show]
   resources :stations, only: [:show]
 

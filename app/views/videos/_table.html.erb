@@ -30,7 +30,7 @@
               <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Fecha</th>
               <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Imagen</th>
               <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Transcripcion</th>
-              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Etiquetas y Variaciones</th>
+              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Etiquetas</th>
               <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Estacion</th>
             </tr>
           </thead>
@@ -57,14 +57,14 @@
                 </td>
                 <td class="px-3 py-4 text-xs">
                   <div class="flex flex-wrap gap-1">
-                    <% video.all_tags.first(5).each do |tag| %>
+                    <% video.tag_list.first(5).each do |tag| %>
                       <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         <%= tag %>
                       </span>
                     <% end %>
-                    <% if video.all_tags.count > 5 %>
+                    <% if video.tag_list.count > 5 %>
                       <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                        +<%= video.all_tags.count - 5 %>
+                        +<%= video.tag_list.count - 5 %>
                       </span>
                     <% end %>
                   </div>

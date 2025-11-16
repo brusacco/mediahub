@@ -17,4 +17,18 @@ class TopicsController < ApplicationController
     @tags_count = {}
     @tags.each { |n| @tags_count[n.name] = n.count }    
   end
+
+  def videos_by_date
+    date = Date.parse(params[:date]) rescue nil
+    topic_id = params[:topic_id]
+    
+    if date && topic_id
+      topic = Topic.find(topic_id)
+      videos = topic.list_videos.where(posted_at: date.beginning_of_day..date.end_of_day)
+      
+      render partial: 'topics/videos_list', locals: { videos: videos, date: date }
+    else
+      render html: '<p class="text-gray-500">No se encontraron clips para esta fecha.</p>'.html_safe
+    end
+  end
 end

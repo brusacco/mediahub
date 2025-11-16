@@ -23,6 +23,39 @@
       background: white;
       width: 100%;
     }
+    /* Highcharts background fix - white background */
+    .highcharts-container {
+      background-color: white !important;
+    }
+    .highcharts-background {
+      fill: white !important;
+    }
+    .highcharts-plot-background {
+      fill: white !important;
+    }
+    .highcharts-plot-border {
+      fill: white !important;
+    }
+    /* Ensure grid lines are visible */
+    .highcharts-grid-line {
+      stroke: #E5E7EB !important;
+      stroke-width: 1px !important;
+      opacity: 1 !important;
+    }
+    .highcharts-yaxis-grid .highcharts-grid-line {
+      stroke: #E5E7EB !important;
+      stroke-width: 1px !important;
+      opacity: 1 !important;
+    }
+    /* Remove pie chart borders */
+    .highcharts-series path {
+      stroke: transparent !important;
+      stroke-width: 0 !important;
+    }
+    .highcharts-pie-series .highcharts-point {
+      stroke: transparent !important;
+      stroke-width: 0 !important;
+    }
   </style>
 <% end %>
 
@@ -111,17 +144,46 @@
 
     <!-- Section: Time Series Analysis -->
     <section class="mb-8" id="temporal">
-      <div class="mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">
-          <i class="fa-solid fa-chart-line text-indigo-600 mr-2"></i>
-          Análisis Temporal
-        </h2>
-        <p class="mt-2 text-base text-gray-600">
-          Evolución de clips en los últimos <%= DAYS_RANGE %> días
-        </p>
-      </div>
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8">
-        <%= column_chart @videos.group_by_day(:posted_at).count('*'), xtitle: "Fecha", ytitle: "Cant. Clips", label: "Clips", colors: ['indigo'] %>
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">
+        <i class="fa-solid fa-chart-line text-indigo-600 mr-2"></i>
+        Análisis Temporal
+      </h2>
+      
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900">Clips por Día</h3>
+          <span class="text-sm text-gray-500">
+            Últimos <%= DAYS_RANGE %> días
+          </span>
+        </div>
+        
+        <!-- Chart -->
+        <div data-controller="chart-modal" 
+             data-chart-modal-id-value="temporalChart"
+             data-chart-modal-url-value="<%= videos_by_date_topics_path %>"
+             data-chart-modal-topic-id-value="<%= @topic.id %>"
+             class="w-full overflow-hidden">
+          <%= column_chart @videos.group_by_day(:posted_at).count('*'), 
+                id: "temporalChart",
+                xtitle: "Fecha", 
+                ytitle: "Cant. Clips", 
+                label: "Clips", 
+                colors: ['#6366F1'],
+                adapter: 'highcharts',
+                thousands: '.',
+                library: {
+                  yAxis: {
+                    gridLineWidth: 1,
+                    gridLineColor: '#E5E7EB'
+                  },
+                  xAxis: {
+                    gridLineWidth: 1,
+                    gridLineColor: '#E5E7EB'
+                  }
+                } %>
+          <%= render 'shared/chart_modal', graph_id: 'temporalChart' %>
+        </div>
       </div>
     </section>
 
@@ -142,14 +204,36 @@
           <h3 class="text-lg font-semibold text-gray-900 mb-4">
             Clips por Estación
           </h3>
-          <%= pie_chart @videos.group("stations.name").count('*'), donut: true %>
+          <%= pie_chart @videos.group("stations.name").count('*'), 
+                donut: true,
+                adapter: 'highcharts',
+                thousands: '.',
+                library: {
+                  plotOptions: {
+                    pie: {
+                      borderWidth: 0,
+                      borderColor: 'transparent'
+                    }
+                  }
+                } %>
         </div>
         <!-- Chart: Clips por Tag -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">
             Clips por Etiqueta Relacionada
           </h3>
-          <%= pie_chart @tags_count, donut: true %>
+          <%= pie_chart @tags_count, 
+                donut: true,
+                adapter: 'highcharts',
+                thousands: '.',
+                library: {
+                  plotOptions: {
+                    pie: {
+                      borderWidth: 0,
+                      borderColor: 'transparent'
+                    }
+                  }
+                } %>
         </div>
       </div>
     </section>
