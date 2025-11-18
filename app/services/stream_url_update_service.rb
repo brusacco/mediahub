@@ -20,6 +20,7 @@ class StreamUrlUpdateService < ApplicationService
     @station = station
     @reference_url = station.stream_url
     @reference_pattern = extract_reference_pattern(@reference_url) if @reference_url.present?
+    @user_data_dir = nil
   end
 
   def call
@@ -127,6 +128,15 @@ class StreamUrlUpdateService < ApplicationService
           end
         end
       end
+      
+      # Clean up user data directory
+      if @user_data_dir && Dir.exist?(@user_data_dir)
+        begin
+          FileUtils.rm_rf(@user_data_dir)
+        rescue StandardError => e
+          Rails.logger.warn("Could not clean up Chrome user data directory #{@user_data_dir}: #{e.message}")
+        end
+      end
     end
   end
 
@@ -134,6 +144,10 @@ class StreamUrlUpdateService < ApplicationService
 
   def create_driver
     proxy_ip = MITMPROXY_HOST
+
+    # Create unique user data directory for each instance to avoid conflicts
+    @user_data_dir ||= Rails.root.join('tmp', 'chrome_user_data', "station_#{@station.id}_#{Time.current.to_i}_#{rand(10000)}")
+    FileUtils.mkdir_p(@user_data_dir)
 
     options = Selenium::WebDriver::Chrome::Options.new
     options.add_argument('--no-sandbox')
@@ -150,6 +164,7 @@ class StreamUrlUpdateService < ApplicationService
     options.add_argument("--user-agent=#{USER_AGENT}")
     options.add_argument("--proxy-server=http://#{proxy_ip}")
     options.add_argument('--timeout=60')
+    options.add_argument("--user-data-dir=#{@user_data_dir}")
 
     driver = Selenium::WebDriver.for(:chrome, options: options)
     driver.manage.timeouts.implicit_wait = 10
