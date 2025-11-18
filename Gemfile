@@ -57,6 +57,7 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem 'web-console'
+  gem 'rubocop-rails', '~> 2.24', require: false
 
   # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
   # gem "rack-mini-profiler"
@@ -77,8 +78,6 @@ gem 'activeadmin', '~> 3.2'
 gem 'sassc', '~> 2.4'
 
 gem 'activeadmin_addons', '~> 1.10'
-
-gem 'rubocop-rails', '~> 2.24', require: false
 
 gem 'parallel', '~> 1.24'
 
