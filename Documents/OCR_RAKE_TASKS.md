@@ -402,3 +402,4 @@ El sistema aplica las siguientes mejoras automáticamente:
 - Servicio OCR: `app/services/ocr_extraction_service.rb`
 - Rake tasks: `lib/tasks/extract_ocr_text.rake`
 
+

@@ -27,6 +27,13 @@ class StreamUrlUpdateService < ApplicationService
     return handle_error('Station is required') unless @station
     return handle_error('Station stream_source is blank') if @station.stream_source.blank?
 
+    # Check if mitmproxy is running before starting
+    unless mitmproxy_running?
+      error_msg = "Mitmproxy is not running on #{MITMPROXY_HOST}. Please start it with: mitmproxy --listen-port 8080 --mode regular -s capture_m3u8.py"
+      Rails.logger.error(error_msg)
+      return handle_error(error_msg)
+    end
+
     # Clear mitmproxy log before starting
     clear_mitmproxy_log
 
@@ -183,6 +190,19 @@ class StreamUrlUpdateService < ApplicationService
       puts "✓ Cleared mitmproxy log"
     rescue StandardError => e
       Rails.logger.warn("Could not clear mitmproxy log: #{e.message}")
+    end
+  end
+
+  def mitmproxy_running?
+    # Check if mitmproxy is listening on port 8080
+    begin
+      require 'socket'
+      socket = Socket.tcp(MITMPROXY_HOST.split(':').first, MITMPROXY_HOST.split(':').last.to_i, connect_timeout: 2)
+      socket.close
+      true
+    rescue StandardError => e
+      Rails.logger.debug("Mitmproxy check failed: #{e.message}")
+      false
     end
   end
 
