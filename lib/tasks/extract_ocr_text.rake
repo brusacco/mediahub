@@ -5,30 +5,81 @@ namespace :ocr do
   desc 'Extract OCR text from all videos without OCR text'
   task extract_all: :environment do
     puts "Starting OCR extraction for videos without OCR text..."
+    puts ""
     
     videos = Video.no_ocr_text.where.not(thumbnail_path: nil)
     total = videos.count
     processed = 0
     success = 0
     errors = 0
+    no_file = 0
+    no_text = 0
+
+    puts "Found #{total} videos to process"
+    puts ""
 
     videos.find_each do |video|
       processed += 1
-      print "\rProcessing #{processed}/#{total} videos... (#{success} success, #{errors} errors)"
+      
+      # Check if thumbnail file exists
+      thumbnail_full_path = Rails.public_path.join(video.thumbnail_path)
+      file_exists = File.exist?(thumbnail_full_path)
+      
+      unless file_exists
+        no_file += 1
+        print "\r[#{processed}/#{total}] Video #{video.id}: ❌ Thumbnail file not found: #{video.thumbnail_path}"
+        next
+      end
 
+      # Check file size
+      file_size = File.size(thumbnail_full_path)
+      
+      # Check if big thumbnail exists
+      big_thumbnail_path = thumbnail_full_path.to_s.sub(/\.png\z/, '-big.png')
+      big_exists = File.exist?(big_thumbnail_path)
+      big_size = big_exists ? File.size(big_thumbnail_path) : 0
+      
+      print "\r[#{processed}/#{total}] Video #{video.id}: 📷 File OK (#{file_size} bytes) | Big: #{big_exists ? '✅' : '❌'}"
+      
       begin
         video.extract_ocr_text
-        success += 1 if video.reload.ocr_text.present?
+        video.reload
+        
+        if video.ocr_text.present?
+          success += 1
+          print " | ✅ OCR: #{video.ocr_text.length} chars"
+        else
+          no_text += 1
+          print " | ⚠️  No text extracted"
+        end
       rescue StandardError => e
         errors += 1
+        puts "\n❌ Error processing video #{video.id}: #{e.class} - #{e.message}"
         Rails.logger.error("Error processing video #{video.id}: #{e.message}")
+        Rails.logger.error(e.backtrace.first(5).join("\n"))
       end
     end
 
-    puts "\n\nOCR extraction completed!"
+    puts "\n\n" + "="*60
+    puts "OCR extraction completed!"
+    puts "="*60
     puts "Total processed: #{processed}"
-    puts "Successfully extracted: #{success}"
-    puts "Errors: #{errors}"
+    puts "✅ Successfully extracted: #{success}"
+    puts "⚠️  No text found: #{no_text}"
+    puts "❌ Files not found: #{no_file}"
+    puts "❌ Errors: #{errors}"
+    puts ""
+    
+    # Show sample of extracted text if any
+    if success > 0
+      sample = Video.has_ocr_text.order(updated_at: :desc).first
+      if sample
+        puts "Sample extracted text (Video ID: #{sample.id}):"
+        puts "-" * 60
+        puts sample.ocr_text[0..300]
+        puts "-" * 60
+      end
+    end
   end
 
   desc 'Extract OCR text from videos in date range'
