@@ -188,10 +188,20 @@ class StreamUrlUpdateService < ApplicationService
   def create_driver
     proxy_ip = MITMPROXY_HOST
 
+    # Kill any Chrome processes one more time right before creating the driver
+    # This ensures no processes are using directories
+    system("pkill -9 -f 'chrome.*--remote-debugging-port' 2>/dev/null")
+    system("pkill -9 -f 'chromium.*--remote-debugging-port' 2>/dev/null")
+    system("pkill -9 -f 'chrome.*--test-type' 2>/dev/null")
+    system("pkill -9 -f 'chromium.*--test-type' 2>/dev/null")
+    system("pkill -9 -f 'chrome.*--user-data-dir=/tmp/chrome_profile_' 2>/dev/null")
+    system("pkill -9 -f 'chromium.*--user-data-dir=/tmp/chrome_profile_' 2>/dev/null")
+    sleep 0.5
+
     # Create a unique user data directory with timestamp and random suffix
     # This ensures uniqueness even if multiple instances run simultaneously
     timestamp = Time.now.to_i
-    random_suffix = SecureRandom.hex(6)
+    random_suffix = SecureRandom.hex(8)
     @user_data_dir = "/tmp/chrome_profile_#{@station.id}_#{timestamp}_#{random_suffix}"
     
     # Ensure directory doesn't exist and create it fresh
@@ -222,6 +232,8 @@ class StreamUrlUpdateService < ApplicationService
     options.add_argument("--proxy-server=http://#{proxy_ip}")
     options.add_argument('--timeout=60')
     options.add_argument("--user-data-dir=#{@user_data_dir}")
+    # Disable Chrome's user data directory locking to prevent "directory already in use" errors
+    options.add_argument('--disable-features=ChromeUserDataDirLocking')
 
     driver = Selenium::WebDriver.for(:chrome, options: options)
     driver.manage.timeouts.implicit_wait = 10
