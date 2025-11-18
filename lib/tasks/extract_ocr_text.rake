@@ -7,6 +7,32 @@ namespace :ocr do
     puts "Starting OCR extraction for videos without OCR text..."
     puts ""
     
+    # Verify ImageMagick is installed
+    unless system('which convert > /dev/null 2>&1') || system('which magick > /dev/null 2>&1')
+      puts "❌ ERROR: ImageMagick is not installed!"
+      puts ""
+      puts "Install it with:"
+      puts "  Ubuntu/Debian: sudo apt-get install imagemagick"
+      puts "  CentOS/RHEL:   sudo yum install ImageMagick"
+      puts ""
+      exit 1
+    end
+    
+    # Verify Tesseract is installed
+    unless system('which tesseract > /dev/null 2>&1')
+      puts "❌ ERROR: Tesseract OCR is not installed!"
+      puts ""
+      puts "Install it with:"
+      puts "  Ubuntu/Debian: sudo apt-get install tesseract-ocr tesseract-ocr-spa"
+      puts "  CentOS/RHEL:   sudo yum install tesseract tesseract-langpack-spa"
+      puts ""
+      exit 1
+    end
+    
+    puts "✅ ImageMagick: OK"
+    puts "✅ Tesseract: OK"
+    puts ""
+    
     videos = Video.no_ocr_text.where.not(thumbnail_path: nil)
     total = videos.count
     processed = 0
