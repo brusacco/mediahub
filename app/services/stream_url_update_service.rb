@@ -170,8 +170,9 @@ class StreamUrlUpdateService < ApplicationService
     options.add_argument("--user-agent=#{USER_AGENT}")
     options.add_argument("--proxy-server=http://#{proxy_ip}")
     options.add_argument('--timeout=60')
-    # Don't use --user-data-dir - Chrome will use a temporary profile automatically
-    # This avoids "directory already in use" errors
+    # Disable user data directory locking to avoid "directory already in use" errors
+    # This allows Chrome to run without strict user data directory locking checks
+    options.add_argument('--disable-features=ChromeUserDataDirLocking')
 
     driver = Selenium::WebDriver.for(:chrome, options: options)
     driver.manage.timeouts.implicit_wait = 10
