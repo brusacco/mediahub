@@ -30,11 +30,6 @@ namespace :stream do
       end
     end
 
-    # Update stream URLs for all stations with stream_source at startup
-    puts "[#{Time.current}] Updating stream URLs for all stations..."
-    Rails.logger.info("Updating stream URLs for all stations at startup")
-    update_all_stream_urls
-
     loop do
       break if shutdown
 
@@ -48,16 +43,22 @@ namespace :stream do
             pid_file = Rails.root.join('tmp', 'pids', 'stream', "stream-station-#{station.id}.pid")
             process_running = File.exist?(pid_file) && dev_process_running?(File.read(pid_file).to_i)
 
-            # Always start all active stations if not running
-            if !process_running
-              Rails.logger.info("Starting process for active station #{station.id} (#{station.name})")
-              station.add_log_entry("Orchestrator: Iniciando proceso de grabación")
-              dev_start_process(station.id)
-            elsif station.stale_heartbeat?
-              # If process is running but heartbeat is stale, restart it
-              Rails.logger.warn("Restarting process for station #{station.id} due to stale heartbeat")
-              station.add_log_entry("Orchestrator: Reiniciando proceso debido a heartbeat obsoleto", level: :warn)
-              dev_restart_process(station.id)
+            # Check if station needs attention
+            if station.needs_attention?
+              Rails.logger.warn("Station #{station.id} (#{station.name}) needs attention - Status: #{station.stream_status}, Heartbeat: #{station.last_heartbeat_at}")
+
+              if !process_running
+                Rails.logger.info("Starting process for station #{station.id}")
+                dev_start_process(station.id)
+              elsif station.stale_heartbeat?
+                Rails.logger.warn("Restarting process for station #{station.id} due to stale heartbeat")
+                dev_restart_process(station.id)
+              end
+            elsif station.healthy?
+              unless process_running
+                Rails.logger.info("Starting process for healthy station #{station.id}")
+                dev_start_process(station.id)
+              end
             end
 
             # Update station status based on process status
@@ -73,16 +74,28 @@ namespace :stream do
             service_name = "#{service_prefix}-#{station.id}"
             service_status = check_systemd_service(service_name)
 
-            # Always start all active stations if service is not running
-            if service_status != 'active'
-              Rails.logger.info("Starting systemd service for active station #{station.id} (#{station.name})")
-              station.add_log_entry("Orchestrator: Iniciando servicio systemd de grabación")
-              start_systemd_service(service_name, station.id)
-            elsif station.stale_heartbeat?
-              # Service is running but heartbeat is stale - restart it
-              Rails.logger.warn("Restarting systemd service for station #{station.id} due to stale heartbeat")
-              station.add_log_entry("Orchestrator: Reiniciando servicio systemd debido a heartbeat obsoleto", level: :warn)
-              restart_systemd_service(service_name)
+            # Check if station needs attention
+            if station.needs_attention?
+              Rails.logger.warn("Station #{station.id} (#{station.name}) needs attention - Status: #{station.stream_status}, Heartbeat: #{station.last_heartbeat_at}")
+
+              # If service is not running, start it
+              if service_status != 'active'
+                Rails.logger.info("Starting systemd service for station #{station.id}")
+                start_systemd_service(service_name, station.id)
+              elsif station.stale_heartbeat?
+                # Service is running but heartbeat is stale - restart it
+                Rails.logger.warn("Restarting systemd service for station #{station.id} due to stale heartbeat")
+                restart_systemd_service(service_name)
+              end
+            elsif station.healthy?
+              # Station is healthy
+              if service_status != 'active'
+                # Service should be running but isn't - start it
+                Rails.logger.info("Starting systemd service for healthy station #{station.id}")
+                start_systemd_service(service_name, station.id)
+              else
+                Rails.logger.debug("Station #{station.id} is healthy and service is active")
+              end
             end
 
             # Update station status based on service status
@@ -117,50 +130,6 @@ namespace :stream do
   end
 
   private
-
-  def update_all_stream_urls
-    stations_with_source = Station.active.where.not(stream_source: [nil, ''])
-    
-    if stations_with_source.empty?
-      puts "  No stations with stream_source found, skipping URL update"
-      Rails.logger.info("No stations with stream_source found, skipping URL update")
-      return
-    end
-
-    puts "  Found #{stations_with_source.count} station(s) with stream_source"
-    Rails.logger.info("Updating stream URLs for #{stations_with_source.count} station(s)")
-
-    stations_with_source.find_each do |station|
-      begin
-        puts "  Updating stream URL for station #{station.id} (#{station.name})..."
-        Rails.logger.info("Updating stream URL for station #{station.id} (#{station.name})")
-        station.add_log_entry("Orchestrator: Actualizando stream URL al inicio")
-        
-        result = StreamUrlUpdateService.call(station)
-        
-        if result.success?
-          puts "    ✓ Successfully updated: #{result.data}"
-          Rails.logger.info("Successfully updated stream URL for station #{station.id}: #{result.data}")
-          station.add_log_entry("Orchestrator: Stream URL actualizado exitosamente: #{result.data}")
-        else
-          puts "    ✗ Failed: #{result.error}"
-          Rails.logger.warn("Failed to update stream URL for station #{station.id}: #{result.error}")
-          station.add_log_entry("Orchestrator: Error al actualizar stream URL: #{result.error}", level: :error)
-        end
-      rescue StandardError => e
-        puts "    ✗ Error: #{e.message}"
-        Rails.logger.error("Error updating stream URL for station #{station.id}: #{e.message}")
-        Rails.logger.error(e.backtrace.join("\n"))
-        station.add_log_entry("Orchestrator: Excepción al actualizar stream URL: #{e.message}", level: :error)
-      end
-      
-      # Small delay between updates to avoid overwhelming the system
-      sleep 2
-    end
-
-    puts "[#{Time.current}] Finished updating stream URLs"
-    Rails.logger.info("Finished updating stream URLs for all stations")
-  end
 
   def systemd_available?
     # Check if systemd is available (not on macOS)
