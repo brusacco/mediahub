@@ -20,6 +20,7 @@ class StreamUrlUpdateService < ApplicationService
     @station = station
     @reference_url = station.stream_url
     @reference_pattern = extract_reference_pattern(@reference_url) if @reference_url.present?
+    @user_data_dir = nil
   end
 
   def call
@@ -133,18 +134,50 @@ class StreamUrlUpdateService < ApplicationService
         end
         
         # Wait a moment for Chrome to fully terminate
-        sleep 0.5
+        sleep 1
         
         # Kill any remaining Chrome/Chromium processes that might be orphaned
         begin
           # Kill Chrome processes with remote debugging (Selenium WebDriver instances)
-          system("pkill -f 'chrome.*--remote-debugging-port' 2>/dev/null")
-          system("pkill -f 'chromium.*--remote-debugging-port' 2>/dev/null")
+          system("pkill -9 -f 'chrome.*--remote-debugging-port' 2>/dev/null")
+          system("pkill -9 -f 'chromium.*--remote-debugging-port' 2>/dev/null")
           # Kill Chrome processes with test-type flag (headless Chrome)
-          system("pkill -f 'chrome.*--test-type' 2>/dev/null")
-          system("pkill -f 'chromium.*--test-type' 2>/dev/null")
+          system("pkill -9 -f 'chrome.*--test-type' 2>/dev/null")
+          system("pkill -9 -f 'chromium.*--test-type' 2>/dev/null")
+          # Kill any Chrome processes using our specific user data directory
+          if @user_data_dir
+            system("pkill -9 -f 'chrome.*--user-data-dir=#{@user_data_dir}' 2>/dev/null")
+            system("pkill -9 -f 'chromium.*--user-data-dir=#{@user_data_dir}' 2>/dev/null")
+          end
         rescue StandardError => e
           Rails.logger.debug("Error killing Chrome processes: #{e.message}")
+        end
+        
+        # Clean up user data directory after Chrome processes are killed
+        if @user_data_dir
+          begin
+            # Remove lock files first
+            # FileUtils.rm_f handles non-existent files gracefully
+            lock_file = File.join(@user_data_dir, 'SingletonLock')
+            FileUtils.rm_f(lock_file)
+            
+            # Wait a bit more for any remaining file handles to close
+            sleep 0.5
+            
+            # Remove the directory
+            # FileUtils.rm_rf handles non-existent directories gracefully
+            FileUtils.rm_rf(@user_data_dir)
+            Rails.logger.debug("Cleaned up Chrome user data directory: #{@user_data_dir}")
+          rescue StandardError => e
+            Rails.logger.warn("Could not clean up Chrome user data directory #{@user_data_dir}: #{e.message}")
+            # Try once more after a delay
+            begin
+              sleep 1
+              FileUtils.rm_rf(@user_data_dir)
+            rescue StandardError => e2
+              Rails.logger.warn("Second cleanup attempt also failed: #{e2.message}")
+            end
+          end
         end
       end
     end
@@ -154,6 +187,24 @@ class StreamUrlUpdateService < ApplicationService
 
   def create_driver
     proxy_ip = MITMPROXY_HOST
+
+    # Create a unique user data directory with timestamp and random suffix
+    # This ensures uniqueness even if multiple instances run simultaneously
+    timestamp = Time.now.to_i
+    random_suffix = SecureRandom.hex(6)
+    @user_data_dir = "/tmp/chrome_profile_#{@station.id}_#{timestamp}_#{random_suffix}"
+    
+    # Ensure directory doesn't exist and create it fresh
+    # FileUtils.rm_rf handles non-existent directories gracefully
+    FileUtils.rm_rf(@user_data_dir)
+    
+    # Create the directory
+    FileUtils.mkdir_p(@user_data_dir)
+    
+    # Remove any lock files that might exist
+    # FileUtils.rm_f handles non-existent files gracefully
+    lock_file = File.join(@user_data_dir, 'SingletonLock')
+    FileUtils.rm_f(lock_file)
 
     options = Selenium::WebDriver::Chrome::Options.new
     options.add_argument('--no-sandbox')
@@ -170,7 +221,7 @@ class StreamUrlUpdateService < ApplicationService
     options.add_argument("--user-agent=#{USER_AGENT}")
     options.add_argument("--proxy-server=http://#{proxy_ip}")
     options.add_argument('--timeout=60')
-    options.add_argument("--user-data-dir=/tmp/chrome_profile_#{SecureRandom.hex(6)}")
+    options.add_argument("--user-data-dir=#{@user_data_dir}")
 
     driver = Selenium::WebDriver.for(:chrome, options: options)
     driver.manage.timeouts.implicit_wait = 10
@@ -321,15 +372,38 @@ class StreamUrlUpdateService < ApplicationService
   def cleanup_old_chrome_processes
     # Kill any existing Chrome/Chromium processes that might be orphaned
     begin
+      puts "🧹 Cleaning up old Chrome processes..."
+      
       # Kill Chrome processes with remote debugging (Selenium WebDriver instances)
       # Support both 'chrome' and 'chromium' binary names (Ubuntu often uses chromium)
-      system("pkill -f 'chrome.*--remote-debugging-port' 2>/dev/null")
-      system("pkill -f 'chromium.*--remote-debugging-port' 2>/dev/null")
+      # Use -9 for immediate termination
+      system("pkill -9 -f 'chrome.*--remote-debugging-port' 2>/dev/null")
+      system("pkill -9 -f 'chromium.*--remote-debugging-port' 2>/dev/null")
       # Kill Chrome processes with test-type flag (headless Chrome)
-      system("pkill -f 'chrome.*--test-type' 2>/dev/null")
-      system("pkill -f 'chromium.*--test-type' 2>/dev/null")
-      # Wait a moment for processes to terminate
-      sleep 0.5
+      system("pkill -9 -f 'chrome.*--test-type' 2>/dev/null")
+      system("pkill -9 -f 'chromium.*--test-type' 2>/dev/null")
+      # Kill any Chrome processes using /tmp/chrome_profile_*
+      system("pkill -9 -f 'chrome.*--user-data-dir=/tmp/chrome_profile_' 2>/dev/null")
+      system("pkill -9 -f 'chromium.*--user-data-dir=/tmp/chrome_profile_' 2>/dev/null")
+      
+      # Wait for processes to terminate
+      sleep 1
+      
+      # Clean up old chrome profile directories in /tmp (older than 1 hour)
+      begin
+        Dir.glob('/tmp/chrome_profile_*').each do |dir|
+          if File.directory?(dir) && (Time.now - File.mtime(dir)) > 3600
+            FileUtils.rm_rf(dir)
+            Rails.logger.debug("Cleaned up old Chrome profile directory: #{dir}")
+          end
+        rescue StandardError => e
+          Rails.logger.debug("Could not clean up directory #{dir}: #{e.message}")
+        end
+      rescue StandardError => e
+        Rails.logger.debug("Error cleaning up old directories: #{e.message}")
+      end
+      
+      puts "✓ Chrome cleanup complete"
     rescue StandardError => e
       Rails.logger.debug("Error during Chrome cleanup: #{e.message}")
     end
