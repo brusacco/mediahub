@@ -17,6 +17,25 @@ MediaHub is a Rails 7.1 application that records, transcribes, and analyzes vide
 - **Versioning**: PaperTrail
 - **Stream URL Capture**: Mitmproxy + Selenium WebDriver (see `Documents/MITMPROXY_INTEGRATION.md`)
 
+## Infrastructure & Hardware
+
+### Production Server Specifications
+
+- **CPU**: Intel Core i9 (high-performance processor)
+- **RAM**: 128GB (extensive memory available for processing)
+- **GPU**: NVIDIA RTX 3090 with 24GB VRAM (available for hardware acceleration)
+  - **Considerations**: Can leverage GPU acceleration for FFmpeg encoding/decoding (h264_nvenc) and potentially Whisper transcription acceleration
+  - **FFmpeg GPU**: Can use `-c:v h264_nvenc` for hardware-accelerated video encoding to reduce CPU load
+  - **Multiple Streams**: With 10 concurrent FFmpeg processes, GPU acceleration can significantly reduce CPU usage
+- **Storage**: Dedicated server with high I/O capacity for video file storage and processing
+
+### Performance Optimization Opportunities
+
+- **FFmpeg Hardware Acceleration**: Consider using NVIDIA GPU encoding (`h264_nvenc`) for video processing to offload CPU
+- **Parallel Processing**: With 128GB RAM, can handle extensive parallel video processing and transcription tasks
+- **Memory-Intensive Operations**: Can process larger batches without memory constraints
+- **GPU-Accelerated Transcription**: Whisper models can potentially leverage GPU for faster transcription processing
+
 ## Code Style & Conventions
 
 ### Ruby/Rails Standards

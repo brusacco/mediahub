@@ -180,6 +180,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_04_10_202038) do
     t.string "public_path"
     t.text "transcription"
     t.string "thumbnail_path"
+    t.text "ocr_text"
     t.index ["station_id"], name: "index_videos_on_station_id"
   end
 

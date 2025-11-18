@@ -8,12 +8,15 @@ ActiveAdmin.register Video do
 
   filter :station, label: 'Estación'
   filter :transcription_cont, label: 'Transcripción'
+  filter :ocr_text_cont, label: 'Texto OCR'
   filter :tags, label: 'Etiquetas'
   filter :posted_at, as: :date_range
 
   scope :all
   scope :no_transcription
   scope :no_thumbnail
+  scope :no_ocr_text, label: 'Sin OCR'
+  scope :has_ocr_text, label: 'Con OCR'
 
   index do
     selectable_column
@@ -28,6 +31,9 @@ ActiveAdmin.register Video do
       else
         video.transcription
       end
+    end
+    column :ocr_text do |video|
+      truncate(video.ocr_text, length: 100) if video.ocr_text.present?
     end
     column :tag_list
     column :created_at
@@ -57,6 +63,13 @@ ActiveAdmin.register Video do
       row :public_path
       row 'Transcripción' do |video|
         highlight(video.transcription, video.all_tags_boundarys, highlighter: '<span class="highlight">\1</span>')
+      end
+      row 'Texto OCR (Zócalos)' do |video|
+        if video.ocr_text.present?
+          content_tag(:div, video.ocr_text, style: 'white-space: pre-wrap; background-color: #f5f5f5; padding: 10px; border-radius: 4px;')
+        else
+          content_tag(:span, 'No disponible', style: 'color: #999;')
+        end
       end
       row :tag_list
       row :created_at

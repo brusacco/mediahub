@@ -105,3 +105,7 @@ gem "chartkick"
 gem "groupdate"
 
 gem "rubocop", "~> 1.71"
+
+# OCR for text extraction from images
+gem 'rtesseract', '~> 3.1'
+gem 'mini_magick', '~> 4.12'

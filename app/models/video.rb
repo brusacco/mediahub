@@ -14,6 +14,8 @@ class Video < ApplicationRecord
   scope :no_transcription, -> { where(transcription: nil) }
   scope :has_transcription, -> { where.not(transcription: nil) }
   scope :no_thumbnail, -> { where(thumbnail_path: nil) }
+  scope :no_ocr_text, -> { where(ocr_text: nil).or(where(ocr_text: '')) }
+  scope :has_ocr_text, -> { where.not(ocr_text: nil).where.not(ocr_text: '') }
   scope :normal_range, -> { where(posted_at: DAYS_RANGE.days.ago..) }
 
   def directories
@@ -32,6 +34,8 @@ class Video < ApplicationRecord
 
     if status.success?
       update(thumbnail_path: public_thumbnail_path)
+      # Extract OCR text from thumbnail (focus on lower thirds/zócalos)
+      extract_ocr_text
     else
       Rails.logger.error("Error generating thumbnail for #{location}: #{stderr}")
     end
@@ -39,6 +43,26 @@ class Video < ApplicationRecord
     # Run ffmpeg command to generate BIG thumbnail
     command = "ffmpeg -y -i #{path} -ss 00:00:01 -frames:v 1 #{big_thumbnail_path}"
     _stdout, _stderr, _status = Open3.capture3(command)
+  end
+
+  def extract_ocr_text
+    return unless thumbnail_path.present?
+
+    thumbnail_full_path = Rails.public_path.join(thumbnail_path)
+    return unless File.exist?(thumbnail_full_path)
+
+    # Try to use big thumbnail if available (better quality for OCR)
+    big_thumbnail_path = thumbnail_full_path.to_s.sub(/\.png\z/, '-big.png')
+    image_path = File.exist?(big_thumbnail_path) ? big_thumbnail_path : thumbnail_full_path.to_s
+
+    result = OcrExtractionService.call(image_path, lower_third_only: true)
+    if result.success?
+      update(ocr_text: result.data) if result.data.present?
+    else
+      Rails.logger.error("Error extracting OCR text for #{location}: #{result.error}")
+    end
+  rescue StandardError => e
+    Rails.logger.error("Error in extract_ocr_text for #{location}: #{e.message}")
   end
 
   def all_tags
@@ -68,7 +92,8 @@ class Video < ApplicationRecord
   def remove_thumbnail
     return if thumbnail_path.blank?
 
-    FileUtils.rm_rf(thumbnail_path)
+    thumbnail_full_path = Rails.public_path.join(thumbnail_path)
+    FileUtils.rm_rf(thumbnail_full_path) if File.exist?(thumbnail_full_path)
   end
 
   def cleanup_files
