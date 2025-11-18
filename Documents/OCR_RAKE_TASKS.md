@@ -403,3 +403,4 @@ El sistema aplica las siguientes mejoras automáticamente:
 - Rake tasks: `lib/tasks/extract_ocr_text.rake`
 
 
+
