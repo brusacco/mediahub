@@ -1,3 +1,24 @@
+<% content_for :extra_stylesheets do %>
+  <style>
+    /* Ensure grid lines are visible for all charts */
+    .highcharts-grid-line {
+      stroke: #E5E7EB !important;
+      stroke-width: 1px !important;
+      opacity: 1 !important;
+    }
+    .highcharts-yaxis-grid .highcharts-grid-line {
+      stroke: #E5E7EB !important;
+      stroke-width: 1px !important;
+      opacity: 1 !important;
+    }
+    .highcharts-xaxis-grid .highcharts-grid-line {
+      stroke: #E5E7EB !important;
+      stroke-width: 1px !important;
+      opacity: 1 !important;
+    }
+  </style>
+<% end %>
+
 <!-- Hero Section: Dashboard Overview -->
 <section class="relative bg-gradient-to-br from-indigo-50 via-white to-slate-50 py-12 lg:py-16">
   <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
@@ -9,6 +30,68 @@
         Análisis y visualización de contenido multimedia en tiempo real
       </p>
     </div>
+  </div>
+</section>
+
+<!-- Section: Mis Temas en Monitoreo -->
+<section class="py-12 lg:py-16 bg-white">
+  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-3xl font-bold text-gray-900">
+        <i class="fa-solid fa-list-check text-indigo-600 mr-3"></i>
+        Mis Temas en Monitoreo
+      </h2>
+      <span class="text-sm text-gray-500"><%= @topicos.count %> <%= @topicos.count == 1 ? 'tema activo' : 'temas activos' %></span>
+    </div>
+
+    <% if @topicos.any? %>
+      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <% @topicos.each do |topic| %>
+          <% 
+            videos = topic.list_videos
+            total_clips = videos.count
+            stations_count = videos.joins(:station).distinct.count('stations.id')
+            tags_count = topic.tags.count
+          %>
+          <div class="bg-white rounded-xl shadow-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-2xl transition-all duration-300 p-6 group">
+            <!-- Topic Header -->
+            <div class="mb-4">
+              <h3 class="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                <%= topic.name %>
+              </h3>
+            </div>
+
+            <!-- Mini KPIs Grid -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+              <div class="text-center">
+                <p class="text-xs text-gray-500 mb-1">Clips</p>
+                <p class="text-2xl font-bold text-indigo-600"><%= number_with_delimiter(total_clips) %></p>
+              </div>
+              <div class="text-center">
+                <p class="text-xs text-gray-500 mb-1">Estaciones</p>
+                <p class="text-2xl font-bold text-purple-600"><%= number_with_delimiter(stations_count) %></p>
+              </div>
+              <div class="text-center">
+                <p class="text-xs text-gray-500 mb-1">Etiquetas</p>
+                <p class="text-2xl font-bold text-teal-600"><%= number_with_delimiter(tags_count) %></p>
+              </div>
+            </div>
+
+            <!-- View Topic Button -->
+            <%= link_to topic_path(topic), class: "w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm" do %>
+              <i class="fa-solid fa-chart-line mr-2"></i>
+              Ver Análisis Completo
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-12 text-center">
+        <i class="fa-solid fa-inbox text-6xl text-gray-300 mb-4"></i>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">No hay temas activos</h3>
+        <p class="text-gray-600">Contacta con tu administrador para que te asigne temas para monitorear.</p>
+      </div>
+    <% end %>
   </div>
 </section>
 
@@ -38,14 +121,24 @@
           </p>
         </div>
         <div class="chart-container">
-          <%= line_chart @video_quantities, xtitle: "Fecha", ytitle: "Cant. Clips", thousands: ".", curve: false, library: {
-              plotOptions: {
-                series: {
-                  dataLabels: {
-                    enabled: true
+          <%= line_chart @video_quantities, 
+                xtitle: "Fecha", 
+                ytitle: "Cant. Clips", 
+                thousands: ".", 
+                curve: false,
+                adapter: 'highcharts',
+                library: {
+                  chart: {
+                    backgroundColor: 'white'
+                  },
+                  plotOptions: {
+                    series: {
+                      dataLabels: {
+                        enabled: true
+                      }
+                    }
                   }
-                }
-              } } %>
+                } %>
         </div>
       </div>
 
@@ -60,14 +153,23 @@
           </p>
         </div>
         <div class="chart-container">
-          <%= bar_chart @videos_last_day_topics, xtitle: "Tópico", ytitle: "Cant. Clips", thousands: ".", library: {
-              plotOptions: {
-                series: {
-                  dataLabels: {
-                    enabled: true
+          <%= bar_chart @videos_last_day_topics, 
+                xtitle: "Tópico", 
+                ytitle: "Cant. Clips", 
+                thousands: ".", 
+                adapter: 'highcharts',
+                library: {
+                  chart: {
+                    backgroundColor: 'white'
+                  },
+                  plotOptions: {
+                    series: {
+                      dataLabels: {
+                        enabled: true
+                      }
+                    }
                   }
-                }
-              } } %>
+                } %>
         </div>
       </div>
     </div>

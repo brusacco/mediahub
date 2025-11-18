@@ -171,17 +171,7 @@
                 label: "Clips", 
                 colors: ['#6366F1'],
                 adapter: 'highcharts',
-                thousands: '.',
-                library: {
-                  yAxis: {
-                    gridLineWidth: 1,
-                    gridLineColor: '#E5E7EB'
-                  },
-                  xAxis: {
-                    gridLineWidth: 1,
-                    gridLineColor: '#E5E7EB'
-                  }
-                } %>
+                thousands: '.' %>
           <%= render 'shared/chart_modal', graph_id: 'temporalChart' %>
         </div>
       </div>

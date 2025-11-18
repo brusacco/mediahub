@@ -9,6 +9,21 @@
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <link href="https://code.highcharts.com/css/highcharts.css" rel="stylesheet">
+    <style>
+      /* Force white background for all Highcharts charts */
+      .highcharts-container {
+        background-color: white !important;
+      }
+      .highcharts-background {
+        fill: white !important;
+      }
+      .highcharts-plot-background {
+        fill: white !important;
+      }
+      .highcharts-plot-border {
+        fill: white !important;
+      }
+    </style>
     <%= yield :extra_stylesheets if content_for?(:extra_stylesheets) %>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/10.3.2/highcharts.js" crossorigin="anonymous"></script>
     <script>
@@ -38,7 +53,7 @@
             style: {
               fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
             },
-            backgroundColor: 'transparent',
+            backgroundColor: 'white',
             spacing: [20, 20, 20, 20]
           },
           
@@ -112,7 +127,6 @@
                 fontWeight: '400'
               }
             },
-            gridLineWidth: 1,
             gridLineColor: '#E5E7EB', // gray-200
             lineColor: '#D1D5DB', // gray-300
             tickColor: '#D1D5DB' // gray-300
@@ -126,7 +140,6 @@
                 fontWeight: '400'
               }
             },
-            gridLineWidth: 1,
             gridLineColor: '#E5E7EB', // gray-200
             lineColor: '#D1D5DB', // gray-300
             title: {

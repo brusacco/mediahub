@@ -70,6 +70,12 @@ namespace :stream do
           'ffmpeg',
           '-i', station.stream_url,
           
+          # Buffer settings for handling latency
+          '-fflags', '+genpts+discardcorrupt',
+          '-flags', '+global_header',
+          '-analyzeduration', '10000000',
+          '-probesize', '10000000',
+          
           # Audio codec settings - PRIORITY: High quality for transcription
           '-c:a', 'aac',
           '-b:a', '256k',           # High bitrate for better audio quality (was 128k)
@@ -79,11 +85,11 @@ namespace :stream do
           
           # Video codec and quality settings (secondary priority)
           '-c:v', 'libx264',
-          '-preset', 'fast',        # Faster preset to save CPU for audio processing
+          '-preset', 'veryfast',    # Faster preset to save CPU for audio processing
           '-crf', '25',             # Slightly lower video quality to prioritize audio
           '-profile:v', 'high',
           '-level', '4.0',
-          '-maxrate', '2000k',      # Reduced video bitrate to allow more bandwidth for audio
+          '-maxrate', '1500k',      # Reduced video bitrate to allow more bandwidth for audio
           '-bufsize', '4000k',
           
           # Video scaling
@@ -99,11 +105,11 @@ namespace :stream do
           '-keyint_min', '60',
           
           # Timeout and reconnection settings
-          '-timeout', '10000000', # 10 seconds timeout in microseconds
+          '-timeout', '30000000', # 30 seconds timeout in microseconds
           '-reconnect', '1',
           '-reconnect_at_eof', '1',
           '-reconnect_streamed', '1',
-          '-reconnect_delay_max', '2',
+          '-reconnect_delay_max', '10',
           
           # MP4 optimization
           '-movflags', '+faststart',

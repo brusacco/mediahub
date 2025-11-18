@@ -34,5 +34,10 @@ module ApplicationHelper
 
     # Ensure the result is within the range [1, 10]
     normalized.clamp(1, 10)
-  end  
+  end
+
+  def number_with_delimiter(number, options = {})
+    delimiter = options[:delimiter] || '.'
+    number.to_s.reverse.gsub(/(\d{3})(?=\d)/, "\\1#{delimiter}").reverse
+  end
 end
