@@ -6,8 +6,8 @@ require 'mini_magick'
 # Service to extract text from video thumbnails using OCR
 # Focuses on extracting text from lower thirds (zócalos) in news videos
 class OcrExtractionService < ApplicationService
-  # Languages: Spanish and English for news content
-  DEFAULT_LANG = 'spa+eng'.freeze
+  # Language: Spanish only for news content
+  DEFAULT_LANG = 'spa'.freeze
   # Lower third region: bottom 30% of image (where zócalos typically appear)
   LOWER_THIRD_REGION = { y_offset: 0.7, height: 0.3 }.freeze
 
