@@ -79,14 +79,9 @@ La extracción OCR se ejecuta automáticamente cuando:
 1. Se importa un nuevo video (`VideoImportService`)
 2. Se genera un thumbnail (`Video#generate_thumbnail`)
 
-### Extracción Manual
+### Extracción Manual con Rake Tasks
 
-#### Extraer OCR de un video específico:
-
-```ruby
-video = Video.find(123)
-video.extract_ocr_text
-```
+Para una referencia completa de los rake tasks disponibles, ver: **[OCR_RAKE_TASKS.md](OCR_RAKE_TASKS.md)**
 
 #### Extraer OCR de todos los videos sin OCR:
 
@@ -94,16 +89,39 @@ video.extract_ocr_text
 rake ocr:extract_all
 ```
 
+**Características:**
+- Solo procesa videos que no tienen texto OCR
+- Verifica automáticamente requisitos del sistema
+- Muestra progreso detallado con estadísticas
+
+#### Re-extraer OCR de todos los videos:
+
+```bash
+rake ocr:re_extract_all
+```
+
+**Características:**
+- Procesa TODOS los videos con thumbnails
+- Sobrescribe texto OCR existente
+- Útil después de mejorar el algoritmo de OCR
+
 #### Extraer OCR de videos en un rango de fechas:
 
 ```bash
 rake ocr:extract_range[2024-01-01,2024-01-31]
 ```
 
-#### Re-extraer OCR de todos los videos:
+**Características:**
+- Procesa videos entre fechas específicas
+- Útil para procesar períodos específicos
 
-```bash
-rake ocr:re_extract_all
+### Extracción Manual Programática
+
+#### Extraer OCR de un video específico:
+
+```ruby
+video = Video.find(123)
+video.extract_ocr_text
 ```
 
 ### Uso Programático
@@ -243,6 +261,7 @@ Posibles mejoras futuras:
 
 ## Referencias
 
+- **Documentación de Rake Tasks**: [OCR_RAKE_TASKS.md](OCR_RAKE_TASKS.md) - Guía completa de rake tasks disponibles
 - [Tesseract OCR](https://github.com/tesseract-ocr/tesseract)
 - [rtesseract Gem](https://github.com/dannnylo/rtesseract)
 - [MiniMagick](https://github.com/minimagick/minimagick)

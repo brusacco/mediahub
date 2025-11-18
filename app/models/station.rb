@@ -39,4 +39,37 @@ class Station < ApplicationRecord
   def update_heartbeat!
     update_column(:last_heartbeat_at, Time.current)
   end
+
+  # Logging methods
+  MAX_LOG_SIZE = 10_000 # Keep last 10,000 characters
+
+  # Add a log entry with timestamp
+  def add_log_entry(message, level: :info)
+    timestamp = Time.current.strftime('%Y-%m-%d %H:%M:%S')
+    log_entry = "[#{timestamp}] [#{level.to_s.upcase}] #{message}\n"
+    
+    current_log = log || ''
+    new_log = current_log + log_entry
+    
+    # Truncate if too long, keeping the most recent entries
+    if new_log.length > MAX_LOG_SIZE
+      new_log = new_log[-MAX_LOG_SIZE..-1]
+      # Find first newline to avoid cutting in the middle of a log entry
+      first_newline = new_log.index("\n")
+      new_log = new_log[first_newline + 1..-1] if first_newline
+    end
+    
+    update_column(:log, new_log)
+  end
+
+  # Clear the log
+  def clear_log!
+    update_column(:log, nil)
+  end
+
+  # Get recent log entries (last N lines)
+  def recent_log_entries(lines: 50)
+    return [] unless log.present?
+    log.split("\n").last(lines)
+  end
 end

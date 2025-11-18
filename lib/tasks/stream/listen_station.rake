@@ -30,6 +30,7 @@ namespace :stream do
     %w[INT TERM HUP QUIT].each do |signal|
       Signal.trap(signal) do
         puts "\n#{signal} signal received for station #{station.name} (ID: #{station.id})"
+        station.add_log_entry("Señal #{signal} recibida, cerrando proceso")
         shutdown = true
         station.update(stream_status: :disconnected)
         exit 0
@@ -45,12 +46,15 @@ namespace :stream do
 
       begin
         puts "[#{Time.current}] Connecting to station #{station.name} (ID: #{station.id})"
+        station.add_log_entry("Iniciando conexión a la estación")
         
         # Reload station to get latest stream_url
         station.reload
         
         unless station.stream_url.present?
+          error_msg = "No hay stream_url configurado"
           Rails.logger.error("Station #{station.id} has no stream_url")
+          station.add_log_entry(error_msg, level: :error)
           station.update(stream_status: :disconnected)
           sleep base_retry_delay
           retry_count += 1
@@ -63,6 +67,7 @@ namespace :stream do
 
         # Update station status to connected
         station.update(stream_status: :connected, last_heartbeat_at: Time.current)
+        station.add_log_entry("Estado actualizado a conectado")
 
         # Construct the ffmpeg command optimized for audio quality (critical for transcription)
         output_pattern = base_directory.join('%Y-%m-%dT%H_%M_%S.mp4').to_s
@@ -118,6 +123,7 @@ namespace :stream do
         ]
 
         Rails.logger.info("Starting FFmpeg for station #{station.id}: #{command.join(' ')}")
+        station.add_log_entry("Iniciando FFmpeg con URL: #{station.stream_url}")
 
         # Track last file modification time for heartbeat
         last_file_time = nil
@@ -149,7 +155,9 @@ namespace :stream do
 
                 # If no new file in 3 minutes, consider disconnected
                 if Time.current - file_time > 180
+                  warning_msg = "No se generó nuevo archivo en 3 minutos, posible desconexión"
                   Rails.logger.warn("No new file generated for station #{station.id} in 3 minutes, may be disconnected")
+                  station.add_log_entry(warning_msg, level: :warn)
                 end
               end
             end
@@ -166,7 +174,9 @@ namespace :stream do
 
               # Check for disconnection patterns
               if line.match?(%r{Connection refused|Server returned|Network is unreachable|HTTP error \d+|Unable to open|Connection timed out|Failed to resolve|Name or service not known}i)
+                error_msg = "Desconexión detectada: #{line}"
                 Rails.logger.error("Disconnection detected for station #{station.id}: #{line}")
+                station.add_log_entry(error_msg, level: :error)
                 disconnection_detected = true
                 station.update(stream_status: :disconnected, last_heartbeat_at: nil)
                 Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
@@ -175,7 +185,9 @@ namespace :stream do
 
               # Check for end of stream
               if line.match?(%r{End of file|Input/output error|Streaming ended}i)
+                warning_msg = "Stream finalizado: #{line}"
                 Rails.logger.warn("Stream ended for station #{station.id}: #{line}")
+                station.add_log_entry(warning_msg, level: :warn)
                 disconnection_detected = true
                 station.update(stream_status: :disconnected)
                 Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
@@ -191,42 +203,62 @@ namespace :stream do
           heartbeat_thread&.kill
           stderr_thread&.kill
 
-          # If process exited unexpectedly and no disconnection was detected, mark as disconnected
-          unless exit_status.success? || disconnection_detected
+          # Log FFmpeg exit status
+          if exit_status.success?
+            station.add_log_entry("FFmpeg terminó exitosamente (exit status: #{exit_status.exitstatus})")
+          elsif disconnection_detected
+            station.add_log_entry("FFmpeg terminó por desconexión detectada (exit status: #{exit_status.exitstatus})", level: :warn)
+          else
+            error_msg = "FFmpeg terminó inesperadamente con código de salida #{exit_status.exitstatus}"
             Rails.logger.error("FFmpeg exited with status #{exit_status.exitstatus} for station #{station.id}")
+            station.add_log_entry(error_msg, level: :error)
             station.update(stream_status: :disconnected, last_heartbeat_at: nil)
           end
         end
 
         # If we get here, FFmpeg has stopped
-        station.update(stream_status: :disconnected) unless shutdown
+        unless shutdown
+          station.update(stream_status: :disconnected)
+          station.add_log_entry("Estado actualizado a desconectado")
+        end
 
         # Try to update stream URL if source is available
         if station.stream_source.present? && !shutdown
           Rails.logger.info("Attempting to update stream URL for station #{station.id}")
+          station.add_log_entry("Intentando actualizar stream URL desde fuente")
           begin
             Rake::Task['stream:update_stream_url'].reenable
             Rake::Task['stream:update_stream_url'].invoke(station.id)
             station.reload
+            station.add_log_entry("Stream URL actualizado exitosamente")
           rescue StandardError => e
+            error_msg = "Error al actualizar stream URL: #{e.message}"
             Rails.logger.error("Failed to update stream URL for station #{station.id}: #{e.message}")
+            station.add_log_entry(error_msg, level: :error)
           end
         end
 
         # Calculate retry delay with exponential backoff
         if retry_count < max_retries && !shutdown
           retry_delay = [base_retry_delay * (2**retry_count), 60].min
+          retry_msg = "Reintentando conexión en #{retry_delay} segundos (intento #{retry_count + 1}/#{max_retries})"
           puts "Station #{station.name} disconnected, retrying in #{retry_delay} seconds... (attempt #{retry_count + 1}/#{max_retries})"
+          station.add_log_entry(retry_msg, level: :warn)
           sleep retry_delay
           retry_count += 1
         elsif retry_count >= max_retries
+          error_msg = "Se alcanzó el máximo de reintentos (#{max_retries}), deteniendo proceso"
           Rails.logger.error("Max retries reached for station #{station.id}, giving up")
+          station.add_log_entry(error_msg, level: :error)
           break
         end
 
       rescue StandardError => e
+        error_msg = "Error procesando estación: #{e.message}"
         Rails.logger.error("Error processing station #{station.id}: #{e.message}")
         Rails.logger.error(e.backtrace.join("\n"))
+        station.add_log_entry(error_msg, level: :error)
+        station.add_log_entry("Backtrace: #{e.backtrace.first(3).join('; ')}", level: :error)
         station.update(stream_status: :disconnected, last_heartbeat_at: nil)
         
         unless shutdown

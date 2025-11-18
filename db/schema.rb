@@ -77,6 +77,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_04_10_202038) do
     t.string "play_button_selector"
     t.boolean "use_shadow_dom", default: false
     t.boolean "active", default: true
+    t.text "log"
     t.index ["last_heartbeat_at"], name: "index_stations_on_last_heartbeat_at"
   end
 
