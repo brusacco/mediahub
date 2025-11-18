@@ -41,7 +41,24 @@ namespace :stream do
           if development_mode
             # Development mode: use process management
             pid_file = Rails.root.join('tmp', 'pids', 'stream', "stream-station-#{station.id}.pid")
-            process_running = File.exist?(pid_file) && dev_process_running?(File.read(pid_file).to_i)
+            
+            # Check if process is running - first check PID file, then check by command line as backup
+            process_running = false
+            if File.exist?(pid_file)
+              pid = File.read(pid_file).to_i
+              process_running = dev_process_running?(pid)
+            end
+            
+            # If PID file check failed, check by command line (safety check)
+            unless process_running
+              found_pid = dev_find_process_by_station(station.id)
+              if found_pid && dev_process_running?(found_pid)
+                Rails.logger.warn("Found running process for station #{station.id} (PID: #{found_pid}) but PID file missing or incorrect - updating PID file")
+                FileUtils.mkdir_p(File.dirname(pid_file))
+                File.write(pid_file, found_pid.to_s)
+                process_running = true
+              end
+            end
 
             # If process is running, DON'T TOUCH IT - just sync status
             if process_running
@@ -156,14 +173,55 @@ namespace :stream do
     false
   end
 
+  def dev_find_process_by_station(station_id)
+    # Check if there's already a process running for this station by checking command line
+    # This is a safety check in case PID file is missing or corrupted
+    begin
+      # Use pgrep to find processes matching the rake task for this station
+      stdout, _stderr, status = Open3.capture3('pgrep', '-f', "stream:listen_station\\[#{station_id}\\]")
+      if status.success? && !stdout.strip.empty?
+        pids = stdout.strip.split("\n").map(&:to_i).reject(&:zero?)
+        return pids.first if pids.any?
+      end
+    rescue StandardError => e
+      Rails.logger.debug("Error checking for existing process for station #{station_id}: #{e.message}")
+    end
+    nil
+  end
+
   def dev_start_process(station_id)
     pid_dir = Rails.root.join('tmp', 'pids', 'stream')
     FileUtils.mkdir_p(pid_dir)
     
     pid_file = pid_dir.join("stream-station-#{station_id}.pid")
-    log_file = Rails.root.join('log', "stream-station-#{station_id}.log")
     
+    # CRITICAL: Check if process is already running before starting a new one
+    # First check PID file
+    if File.exist?(pid_file)
+      pid = File.read(pid_file).to_i
+      if dev_process_running?(pid)
+        Rails.logger.warn("Process for station #{station_id} is already running (PID: #{pid}), skipping start")
+        return false # Don't start, process is already running
+      else
+        # Stale PID file - remove it
+        Rails.logger.debug("Removing stale PID file for station #{station_id}")
+        File.delete(pid_file)
+      end
+    end
+    
+    # Also check by command line as a safety measure (in case PID file is missing)
+    found_pid = dev_find_process_by_station(station_id)
+    if found_pid && dev_process_running?(found_pid)
+      Rails.logger.warn("Found running process for station #{station_id} (PID: #{found_pid}) via command line check, skipping start")
+      # Update PID file for future reference
+      FileUtils.mkdir_p(File.dirname(pid_file))
+      File.write(pid_file, found_pid.to_s)
+      return false # Don't start, process is already running
+    end
+    
+    log_file = Rails.root.join('log', "stream-station-#{station_id}.log")
     command = "bundle exec rake stream:listen_station[#{station_id}]"
+    
     pid = spawn(
       command,
       out: log_file.to_s,
@@ -172,6 +230,7 @@ namespace :stream do
     )
     
     File.write(pid_file, pid.to_s)
+    Rails.logger.info("Started process for station #{station_id} (PID: #{pid})")
     true
   rescue StandardError => e
     Rails.logger.error("Error starting process for station #{station_id}: #{e.message}")
