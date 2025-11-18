@@ -44,20 +44,40 @@ namespace :stream do
             
             # Check if process is running - first check PID file, then check by command line as backup
             process_running = false
-            if File.exist?(pid_file)
-              pid = File.read(pid_file).to_i
-              process_running = dev_process_running?(pid)
-            end
+            detected_pid = nil
             
-            # If PID file check failed, check by command line (safety check)
-            unless process_running
-              found_pid = dev_find_process_by_station(station.id)
-              if found_pid && dev_process_running?(found_pid)
-                Rails.logger.warn("Found running process for station #{station.id} (PID: #{found_pid}) but PID file missing or incorrect - updating PID file")
+            # Always check by command line first to find the actual process
+            # This is more reliable than PID files which might contain shell PIDs
+            found_pid = dev_find_process_by_station(station.id)
+            if found_pid && dev_process_running?(found_pid)
+              process_running = true
+              detected_pid = found_pid
+              Rails.logger.debug("Station #{station.id}: Found running process via command line - PID: #{found_pid}")
+              
+              # Update PID file if it doesn't match or doesn't exist
+              if !File.exist?(pid_file) || File.read(pid_file).to_i != found_pid
+                Rails.logger.debug("Station #{station.id}: Updating PID file with correct PID: #{found_pid}")
                 FileUtils.mkdir_p(File.dirname(pid_file))
                 File.write(pid_file, found_pid.to_s)
-                process_running = true
               end
+            elsif File.exist?(pid_file)
+              # If command line check failed, try PID file as fallback
+              pid = File.read(pid_file).to_i
+              if dev_process_running?(pid)
+                # Check if this PID is actually our process
+                ps_output, _ps_stderr, ps_status = Open3.capture3('ps', '-p', pid.to_s, '-o', 'command=', '2>/dev/null')
+                if ps_status.success? && ps_output.include?("listen_station") && ps_output.include?(station.id.to_s)
+                  process_running = true
+                  detected_pid = pid
+                  Rails.logger.debug("Station #{station.id}: Process running (PID file check) - PID: #{pid}")
+                else
+                  Rails.logger.debug("Station #{station.id}: PID file exists but PID #{pid} is not our process")
+                end
+              else
+                Rails.logger.debug("Station #{station.id}: PID file exists but process #{pid} not running")
+              end
+            else
+              Rails.logger.debug("Station #{station.id}: No PID file found and no process found via command line")
             end
 
             # If process is running, DON'T TOUCH IT - just sync status
@@ -65,16 +85,28 @@ namespace :stream do
               # Process is running, so station should be marked as connected
               if station.disconnected?
                 station.update(stream_status: :connected)
-                Rails.logger.info("Updated station #{station.id} status to connected (process is running)")
+                Rails.logger.info("Station #{station.id}: Updated status to connected (process running, PID: #{detected_pid})")
+              else
+                Rails.logger.debug("Station #{station.id}: Process running (PID: #{detected_pid}), status already connected")
               end
               # Don't restart even if heartbeat is stale - process is running, let it be
               # The process itself will handle reconnection if needed
             else
               # Process is NOT running
-              # First, sync status: if DB says connected but process isn't running, mark as disconnected
+              # Sync status: if DB says connected but process isn't running, mark as disconnected
+              # But first, double-check one more time with a different method
               if station.connected?
-                station.update(stream_status: :disconnected)
-                Rails.logger.warn("Updated station #{station.id} status to disconnected (process not running)")
+                # Final check: try to find process one more time
+                final_check_pid = dev_find_process_by_station(station.id)
+                if final_check_pid && dev_process_running?(final_check_pid)
+                  Rails.logger.info("Station #{station.id}: Found process on final check (PID: #{final_check_pid}), keeping connected")
+                  # Update PID file
+                  FileUtils.mkdir_p(File.dirname(pid_file))
+                  File.write(pid_file, final_check_pid.to_s)
+                else
+                  Rails.logger.warn("Station #{station.id}: Process not running (verified), updating status to disconnected")
+                  station.update(stream_status: :disconnected)
+                end
               end
               
               # Now check if we need to start the process
@@ -176,12 +208,52 @@ namespace :stream do
   def dev_find_process_by_station(station_id)
     # Check if there's already a process running for this station by checking command line
     # This is a safety check in case PID file is missing or corrupted
+    # Note: Processes are often spawned via "sh -c bundle exec rake..." so we need to check for that too
     begin
-      # Use pgrep to find processes matching the rake task for this station
-      stdout, _stderr, status = Open3.capture3('pgrep', '-f', "stream:listen_station\\[#{station_id}\\]")
-      if status.success? && !stdout.strip.empty?
-        pids = stdout.strip.split("\n").map(&:to_i).reject(&:zero?)
-        return pids.first if pids.any?
+      # Try multiple patterns to find the process
+      # Include patterns that match both direct rake execution and shell-wrapped execution
+      patterns = [
+        "stream:listen_station\\[#{station_id}\\]",           # Direct: rake stream:listen_station[28]
+        "stream:listen_station\\[#{station_id}",              # Partial match
+        "listen_station.*#{station_id}",                       # Flexible match
+        "rake.*stream:listen_station.*#{station_id}",         # Rake process
+        "sh.*listen_station.*#{station_id}",                  # Shell-wrapped: sh -c bundle exec rake...
+        "bundle exec rake stream:listen_station\\[#{station_id}\\]" # Full bundle exec command
+      ]
+      
+      patterns.each do |pattern|
+        stdout, _stderr, status = Open3.capture3('pgrep', '-f', pattern)
+        if status.success? && !stdout.strip.empty?
+          pids = stdout.strip.split("\n").map(&:to_i).reject(&:zero?)
+          if pids.any?
+            # Verify the PID is actually running and matches our process
+            pids.each do |pid|
+              if dev_process_running?(pid)
+                # Try to verify by reading command line (works on Linux)
+                begin
+                  if File.exist?("/proc/#{pid}/cmdline")
+                    cmdline = File.read("/proc/#{pid}/cmdline")
+                    if cmdline && (cmdline.include?("listen_station") || cmdline.include?("stream:listen")) && cmdline.include?(station_id.to_s)
+                      Rails.logger.debug("Found process for station #{station_id} via pattern '#{pattern}' - PID: #{pid}")
+                      return pid
+                    end
+                  else
+                    # On macOS or if /proc doesn't exist, use ps command
+                    ps_output, _ps_stderr, ps_status = Open3.capture3('ps', '-p', pid.to_s, '-o', 'command=')
+                    if ps_status.success? && ps_output.include?("listen_station") && ps_output.include?(station_id.to_s)
+                      Rails.logger.debug("Found process for station #{station_id} via pattern '#{pattern}' - PID: #{pid} (verified via ps)")
+                      return pid
+                    end
+                  end
+                rescue
+                  # If verification fails, still trust pgrep if pattern matches
+                  Rails.logger.debug("Found process for station #{station_id} via pattern '#{pattern}' - PID: #{pid} (could not verify cmdline, trusting pgrep)")
+                  return pid
+                end
+              end
+            end
+          end
+        end
       end
     rescue StandardError => e
       Rails.logger.debug("Error checking for existing process for station #{station_id}: #{e.message}")
