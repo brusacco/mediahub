@@ -49,7 +49,7 @@ namespace :stream do
             process_running = File.exist?(pid_file) && dev_process_running?(File.read(pid_file).to_i)
 
             # Always start all active stations if not running
-            unless process_running
+            if !process_running
               Rails.logger.info("Starting process for active station #{station.id} (#{station.name})")
               station.add_log_entry("Orchestrator: Iniciando proceso de grabación")
               dev_start_process(station.id)
