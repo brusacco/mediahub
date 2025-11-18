@@ -171,7 +171,7 @@ class StreamUrlUpdateService < ApplicationService
     options.add_argument("--user-agent=#{USER_AGENT}")
     options.add_argument("--proxy-server=http://#{proxy_ip}")
     options.add_argument('--timeout=60')
-    options.add_argument("--user-data-dir=#{@user_data_dir}")
+    # options.add_argument("--user-data-dir=#{@user_data_dir}")
     options.add_argument('--disable-features=ChromeUserDataDirLocking')
 
     driver = Selenium::WebDriver.for(:chrome, options: options)
