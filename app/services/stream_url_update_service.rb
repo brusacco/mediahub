@@ -153,7 +153,7 @@ class StreamUrlUpdateService < ApplicationService
     proxy_ip = MITMPROXY_HOST
 
     # Create unique user data directory for each instance to avoid conflicts
-    @user_data_dir ||= Rails.root.join('tmp', 'chrome_user_data', "station_#{@station.id}")
+    @user_data_dir ||= Rails.root.join('tmp', 'chrome_user_data_2', "station_#{@station.id}")
     FileUtils.mkdir_p(@user_data_dir)
 
     options = Selenium::WebDriver::Chrome::Options.new
