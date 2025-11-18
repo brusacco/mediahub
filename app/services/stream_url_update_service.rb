@@ -20,7 +20,6 @@ class StreamUrlUpdateService < ApplicationService
     @station = station
     @reference_url = station.stream_url
     @reference_pattern = extract_reference_pattern(@reference_url) if @reference_url.present?
-    @user_data_dir = nil
   end
 
   def call
@@ -136,25 +135,16 @@ class StreamUrlUpdateService < ApplicationService
         # Wait a moment for Chrome to fully terminate
         sleep 0.5
         
-        # Kill any remaining Chrome processes that might be using the user data directory
+        # Kill any remaining Chrome/Chromium processes that might be orphaned
         begin
-          if @user_data_dir
-            # Kill Chrome processes using this specific user data directory
-            system("pkill -f 'chrome.*--user-data-dir.*#{@user_data_dir.basename}'")
-            # Also kill any Chrome processes with remote debugging that might be orphaned
-            system("pkill -f 'chrome.*--remote-debugging-port.*--test-type'")
-          end
+          # Kill Chrome processes with remote debugging (Selenium WebDriver instances)
+          system("pkill -f 'chrome.*--remote-debugging-port' 2>/dev/null")
+          system("pkill -f 'chromium.*--remote-debugging-port' 2>/dev/null")
+          # Kill Chrome processes with test-type flag (headless Chrome)
+          system("pkill -f 'chrome.*--test-type' 2>/dev/null")
+          system("pkill -f 'chromium.*--test-type' 2>/dev/null")
         rescue StandardError => e
           Rails.logger.debug("Error killing Chrome processes: #{e.message}")
-        end
-      end
-      
-      # Clean up user data directory
-      if @user_data_dir && Dir.exist?(@user_data_dir)
-        begin
-          FileUtils.rm_rf(@user_data_dir)
-        rescue StandardError => e
-          Rails.logger.warn("Could not clean up Chrome user data directory #{@user_data_dir}: #{e.message}")
         end
       end
     end
@@ -164,20 +154,6 @@ class StreamUrlUpdateService < ApplicationService
 
   def create_driver
     proxy_ip = MITMPROXY_HOST
-
-    # Create unique user data directory for each instance to avoid conflicts
-    # Use timestamp and random component to ensure uniqueness even for concurrent runs
-    timestamp = Time.now.to_i
-    random_suffix = SecureRandom.hex(4)
-    @user_data_dir ||= Rails.root.join('tmp', 'chrome_user_data', "station_#{@station.id}_#{timestamp}_#{random_suffix}")
-    
-    # Ensure directory doesn't exist and create it fresh
-    # FileUtils.rm_rf handles non-existent directories gracefully
-    FileUtils.rm_rf(@user_data_dir)
-    FileUtils.mkdir_p(@user_data_dir)
-    
-    # Use absolute path for user-data-dir to avoid any path resolution issues
-    user_data_dir_absolute = @user_data_dir.to_s
 
     options = Selenium::WebDriver::Chrome::Options.new
     options.add_argument('--no-sandbox')
@@ -194,7 +170,8 @@ class StreamUrlUpdateService < ApplicationService
     options.add_argument("--user-agent=#{USER_AGENT}")
     options.add_argument("--proxy-server=http://#{proxy_ip}")
     options.add_argument('--timeout=60')
-    options.add_argument("--user-data-dir=#{user_data_dir_absolute}")
+    # Don't use --user-data-dir - Chrome will use a temporary profile automatically
+    # This avoids "directory already in use" errors
 
     driver = Selenium::WebDriver.for(:chrome, options: options)
     driver.manage.timeouts.implicit_wait = 10
@@ -343,29 +320,17 @@ class StreamUrlUpdateService < ApplicationService
   end
 
   def cleanup_old_chrome_processes
-    # Kill any existing Chrome processes that might be using user data directories
+    # Kill any existing Chrome/Chromium processes that might be orphaned
     begin
       # Kill Chrome processes with remote debugging (Selenium WebDriver instances)
+      # Support both 'chrome' and 'chromium' binary names (Ubuntu often uses chromium)
       system("pkill -f 'chrome.*--remote-debugging-port' 2>/dev/null")
+      system("pkill -f 'chromium.*--remote-debugging-port' 2>/dev/null")
       # Kill Chrome processes with test-type flag (headless Chrome)
       system("pkill -f 'chrome.*--test-type' 2>/dev/null")
+      system("pkill -f 'chromium.*--test-type' 2>/dev/null")
       # Wait a moment for processes to terminate
       sleep 0.5
-      
-      # Clean up old user data directories (older than 1 hour)
-      chrome_data_base = Rails.root.join('tmp', 'chrome_user_data')
-      if Dir.exist?(chrome_data_base)
-        Dir.glob(chrome_data_base.join('*')).each do |dir|
-          if File.directory?(dir) && (Time.now - File.mtime(dir)) > 3600
-            begin
-              FileUtils.rm_rf(dir)
-              Rails.logger.debug("Cleaned up old Chrome user data directory: #{dir}")
-            rescue StandardError => e
-              Rails.logger.debug("Could not clean up old directory #{dir}: #{e.message}")
-            end
-          end
-        end
-      end
     rescue StandardError => e
       Rails.logger.debug("Error during Chrome cleanup: #{e.message}")
     end
