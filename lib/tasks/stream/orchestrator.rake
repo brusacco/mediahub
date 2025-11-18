@@ -43,70 +43,76 @@ namespace :stream do
             pid_file = Rails.root.join('tmp', 'pids', 'stream', "stream-station-#{station.id}.pid")
             process_running = File.exist?(pid_file) && dev_process_running?(File.read(pid_file).to_i)
 
-            # Check if station needs attention
-            if station.needs_attention?
-              Rails.logger.warn("Station #{station.id} (#{station.name}) needs attention - Status: #{station.stream_status}, Heartbeat: #{station.last_heartbeat_at}")
-
-              if !process_running
-                Rails.logger.info("Starting process for station #{station.id}")
+            # If process is running, DON'T TOUCH IT - just sync status
+            if process_running
+              # Process is running, so station should be marked as connected
+              if station.disconnected?
+                station.update(stream_status: :connected)
+                Rails.logger.info("Updated station #{station.id} status to connected (process is running)")
+              end
+              # Don't restart even if heartbeat is stale - process is running, let it be
+              # The process itself will handle reconnection if needed
+            else
+              # Process is NOT running
+              # First, sync status: if DB says connected but process isn't running, mark as disconnected
+              if station.connected?
+                station.update(stream_status: :disconnected)
+                Rails.logger.warn("Updated station #{station.id} status to disconnected (process not running)")
+              end
+              
+              # Now check if we need to start the process
+              # Start if station is disconnected (needs attention)
+              if station.disconnected?
+                Rails.logger.warn("Station #{station.id} (#{station.name}) is disconnected - starting process")
+                Rails.logger.info("Starting process for disconnected station #{station.id}")
                 dev_start_process(station.id)
               elsif station.stale_heartbeat?
-                Rails.logger.warn("Restarting process for station #{station.id} due to stale heartbeat")
-                dev_restart_process(station.id)
-              end
-            elsif station.healthy?
-              unless process_running
-                Rails.logger.info("Starting process for healthy station #{station.id}")
+                # Station has stale heartbeat but process not running - start it
+                Rails.logger.warn("Station #{station.id} (#{station.name}) has stale heartbeat and process not running - starting process")
+                dev_start_process(station.id)
+              elsif station.healthy? && !process_running
+                # Station is healthy but process not running - start it (shouldn't happen but safety check)
+                Rails.logger.info("Starting process for healthy station #{station.id} (process not running)")
                 dev_start_process(station.id)
               end
-            end
-
-            # Update station status based on process status
-            if process_running && station.disconnected?
-              station.update(stream_status: :connected)
-              Rails.logger.info("Updated station #{station.id} status to connected (process is running)")
-            elsif !process_running && station.connected?
-              station.update(stream_status: :disconnected)
-              Rails.logger.warn("Updated station #{station.id} status to disconnected (process not running)")
             end
           else
             # Production mode: use systemd
             service_name = "#{service_prefix}-#{station.id}"
             service_status = check_systemd_service(service_name)
 
-            # Check if station needs attention
-            if station.needs_attention?
-              Rails.logger.warn("Station #{station.id} (#{station.name}) needs attention - Status: #{station.stream_status}, Heartbeat: #{station.last_heartbeat_at}")
-
-              # If service is not running, start it
-              if service_status != 'active'
-                Rails.logger.info("Starting systemd service for station #{station.id}")
+            # If service is active, DON'T TOUCH IT - just sync status
+            if service_status == 'active'
+              # Service is active, so station should be marked as connected
+              if station.disconnected?
+                station.update(stream_status: :connected)
+                Rails.logger.info("Updated station #{station.id} status to connected (service is active)")
+              end
+              # Don't restart even if heartbeat is stale - service is running, let it be
+              # The service itself will handle reconnection if needed
+            else
+              # Service is NOT active
+              # First, sync status: if DB says connected but service isn't active, mark as disconnected
+              if station.connected?
+                station.update(stream_status: :disconnected)
+                Rails.logger.warn("Updated station #{station.id} status to disconnected (service status: #{service_status})")
+              end
+              
+              # Now check if we need to start the service
+              # Start if station is disconnected (needs attention)
+              if station.disconnected?
+                Rails.logger.warn("Station #{station.id} (#{station.name}) is disconnected - starting service")
+                Rails.logger.info("Starting systemd service for disconnected station #{station.id}")
                 start_systemd_service(service_name, station.id)
               elsif station.stale_heartbeat?
-                # Service is running but heartbeat is stale - restart it
-                Rails.logger.warn("Restarting systemd service for station #{station.id} due to stale heartbeat")
-                restart_systemd_service(service_name)
-              end
-            elsif station.healthy?
-              # Station is healthy
-              if service_status != 'active'
-                # Service should be running but isn't - start it
-                Rails.logger.info("Starting systemd service for healthy station #{station.id}")
+                # Station has stale heartbeat but service not running - start it
+                Rails.logger.warn("Station #{station.id} (#{station.name}) has stale heartbeat and service not running - starting service")
                 start_systemd_service(service_name, station.id)
-              else
-                Rails.logger.debug("Station #{station.id} is healthy and service is active")
+              elsif station.healthy? && service_status != 'active'
+                # Station is healthy but service not running - start it (shouldn't happen but safety check)
+                Rails.logger.info("Starting systemd service for healthy station #{station.id} (service not running)")
+                start_systemd_service(service_name, station.id)
               end
-            end
-
-            # Update station status based on service status
-            if service_status == 'active' && station.disconnected?
-              # Service is running but station is marked as disconnected - update status
-              station.update(stream_status: :connected)
-              Rails.logger.info("Updated station #{station.id} status to connected (service is active)")
-            elsif service_status != 'active' && service_status != 'inactive' && station.connected?
-              # Service failed but station is marked as connected - update status
-              station.update(stream_status: :disconnected)
-              Rails.logger.warn("Updated station #{station.id} status to disconnected (service status: #{service_status})")
             end
           end
         end
