@@ -57,6 +57,7 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem 'web-console'
+  gem "rubocop", "~> 1.71"
   gem 'rubocop-rails', '~> 2.24', require: false
 
   # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
@@ -102,8 +103,6 @@ gem 'font-awesome-sass', '~> 6.2'
 gem "chartkick"
 
 gem "groupdate"
-
-gem "rubocop", "~> 1.71"
 
 # OCR for text extraction from images
 gem 'rtesseract', '~> 3.1'
