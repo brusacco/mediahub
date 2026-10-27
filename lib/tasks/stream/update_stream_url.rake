@@ -22,7 +22,7 @@ namespace :stream do
       puts "Successfully updated stream URL for station #{station.name}: #{result.data}"
     else
       puts "Failed to update stream URL: #{result.error}"
-      exit 1
+      raise result.error
     end
   end
 end

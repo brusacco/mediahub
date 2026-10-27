@@ -57,6 +57,7 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem 'web-console'
+  gem 'okf', '~> 2.2', require: false
   gem "rubocop", "~> 1.71"
   gem 'rubocop-rails', '~> 2.24', require: false
 
@@ -97,6 +98,10 @@ gem "paper_trail", "~> 15.1"
 gem 'selenium-webdriver'
 
 gem 'selenium-devtools' #, '0.130.0'
+
+# Optional CDP-based browser recovery for renewing expiring stream manifests.
+# Selenium + mitmproxy remains the default discovery path while Ferrum is trialled.
+gem 'ferrum', '~> 0.17.2'
 
 gem 'font-awesome-sass', '~> 6.2'
 

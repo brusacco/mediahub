@@ -25,6 +25,12 @@ namespace :stream do
       exit 0
     end
 
+    update_station_from_worker = lambda do |attributes|
+      ActiveRecord::Base.connection_pool.with_connection do
+        Station.where(id: station_id).update_all(attributes.merge(updated_at: Time.current))
+      end
+    end
+
     # Set up signal handling for graceful shutdown
     shutdown = false
     %w[INT TERM HUP QUIT].each do |signal|
@@ -32,7 +38,7 @@ namespace :stream do
         puts "\n#{signal} signal received for station #{station.name} (ID: #{station.id})"
         station.add_log_entry("Señal #{signal} recibida, cerrando proceso")
         shutdown = true
-        station.update(stream_status: :disconnected)
+        update_station_from_worker.call(stream_status: Station.stream_statuses[:disconnected], last_heartbeat_at: nil)
         exit 0
       end
     end
@@ -40,7 +46,6 @@ namespace :stream do
     retry_count = 0
     max_retries = 10
     base_retry_delay = 5 # seconds
-
     loop do
       break if shutdown
 
@@ -65,9 +70,12 @@ namespace :stream do
         base_directory = Rails.root.join('public', 'videos', station.directory, 'temp')
         FileUtils.mkdir_p(base_directory)
 
-        # Update station status to connected
-        station.update(stream_status: :connected, last_heartbeat_at: Time.current)
-        station.add_log_entry("Estado actualizado a conectado")
+        # A transport connection is not enough to call a channel healthy: some
+        # broadcasters return an error slate as a valid video stream. The
+        # heartbeat worker marks the station connected only after it sees a
+        # complete segment of a plausible size.
+        station.update(stream_status: :disconnected, last_heartbeat_at: nil)
+        station.add_log_entry("Esperando un segmento válido para confirmar conexión")
 
         # Construct the ffmpeg command optimized for audio quality (critical for transcription)
         output_pattern = base_directory.join('%Y-%m-%dT%H_%M_%S.mp4').to_s
@@ -127,6 +135,7 @@ namespace :stream do
 
         # Track last file modification time for heartbeat
         last_file_time = nil
+        consecutive_invalid_segments = 0
         heartbeat_thread = nil
 
         # Use popen3 to read stderr in real-time
@@ -140,20 +149,42 @@ namespace :stream do
               sleep 30 # Check every 30 seconds
               break if shutdown
 
-              # Check if new files are being created
-              latest_file = Dir.glob(base_directory.join('*.mp4').to_s).max_by { |f| File.mtime(f) }
-              
-              if latest_file && File.exist?(latest_file)
-                file_time = File.mtime(latest_file)
-                
-                # If file is newer than last check, update heartbeat
-                if last_file_time.nil? || file_time > last_file_time
-                  station.update_column(:last_heartbeat_at, Time.current)
-                  last_file_time = file_time
-                  Rails.logger.debug("Heartbeat updated for station #{station.id} from file #{File.basename(latest_file)}")
+              segment_files = Dir.glob(base_directory.join('*.mp4').to_s).sort_by { |file| File.mtime(file) }
+              # The newest file can still be being written. Validate the last
+              # completed segment instead, so a partial file cannot create a
+              # false heartbeat.
+              completed_file = segment_files[-2]
+
+              if completed_file && File.exist?(completed_file)
+                file_time = File.mtime(completed_file)
+                validation = StreamSegmentValidationService.call(completed_file)
+
+                unless validation.success?
+                  consecutive_invalid_segments += 1
+                  warning_msg = "Segmento inválido detectado: #{validation.error}"
+                  Rails.logger.warn("Invalid segment for station #{station.id}: #{warning_msg}")
+                  FileUtils.rm_f(completed_file)
+
+                  if consecutive_invalid_segments >= 2
+                    station.add_log_entry(warning_msg, level: :error)
+                    update_station_from_worker.call(stream_status: Station.stream_statuses[:disconnected], last_heartbeat_at: nil)
+                    Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
+                    break
+                  end
+                  next
                 end
 
-                # If no new file in 3 minutes, consider disconnected
+                consecutive_invalid_segments = 0
+                if last_file_time.nil? || file_time > last_file_time
+                  update_station_from_worker.call(
+                    stream_status: Station.stream_statuses[:connected],
+                    last_heartbeat_at: Time.current
+                  )
+                  last_file_time = file_time
+                  Rails.logger.debug("Validated heartbeat for station #{station.id} from #{File.basename(completed_file)}")
+                end
+
+                # If no new valid file in 3 minutes, consider disconnected
                 if Time.current - file_time > 180
                   warning_msg = "No se generó nuevo archivo en 3 minutos, posible desconexión"
                   Rails.logger.warn("No new file generated for station #{station.id} in 3 minutes, may be disconnected")
@@ -178,7 +209,7 @@ namespace :stream do
                 Rails.logger.error("Disconnection detected for station #{station.id}: #{line}")
                 station.add_log_entry(error_msg, level: :error)
                 disconnection_detected = true
-                station.update(stream_status: :disconnected, last_heartbeat_at: nil)
+                update_station_from_worker.call(stream_status: Station.stream_statuses[:disconnected], last_heartbeat_at: nil)
                 Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
                 break
               end
@@ -189,7 +220,7 @@ namespace :stream do
                 Rails.logger.warn("Stream ended for station #{station.id}: #{line}")
                 station.add_log_entry(warning_msg, level: :warn)
                 disconnection_detected = true
-                station.update(stream_status: :disconnected)
+                update_station_from_worker.call(stream_status: Station.stream_statuses[:disconnected])
                 Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
                 break
               end

@@ -6,6 +6,7 @@ require 'shellwords'
 
 class VideoImportService < ApplicationService
   FILENAME_PATTERN = /\A\d{4}-\d{2}-\d{2}T\d{2}_\d{2}_\d{2}\.mp4\z/.freeze
+  MINIMUM_TEMP_SEGMENT_SIZE_BYTES = 1.megabyte
 
   def self.call(station, file)
     new(station, file).call
@@ -28,6 +29,10 @@ class VideoImportService < ApplicationService
     if file_in_temp_directory? && file_in_use?
       return handle_error('File is in use')
     end
+
+    if file_in_temp_directory? && File.size(@file) < MINIMUM_TEMP_SEGMENT_SIZE_BYTES
+      return handle_error("Segment is too small to import (minimum #{MINIMUM_TEMP_SEGMENT_SIZE_BYTES} bytes)")
+    end
     
     unless valid_filename?
       return handle_error('Invalid filename format')
@@ -39,6 +44,11 @@ class VideoImportService < ApplicationService
     
     unless valid_video?
       return handle_error('Invalid video file')
+    end
+
+    segment_validation = StreamSegmentValidationService.call(@file)
+    unless segment_validation.success?
+      return handle_error("Invalid stream segment: #{segment_validation.error}")
     end
 
     # Calculate destination path

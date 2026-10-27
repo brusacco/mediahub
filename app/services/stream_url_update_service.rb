@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 require 'selenium-webdriver'
+require 'open3'
+require 'json'
+require 'uri'
 
 class StreamUrlUpdateService < ApplicationService
   PAGE_LOAD_TIMEOUT = 120
@@ -10,6 +13,7 @@ class StreamUrlUpdateService < ApplicationService
   USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36'.freeze
   MITMPROXY_LOG_PATH = '/tmp/mitm_m3u8.log'.freeze
   MITMPROXY_HOST = '127.0.0.1:8080'.freeze
+  DISCOVERY_LOCK_PATH = '/tmp/mediahub-stream-discovery.lock'.freeze
 
   def self.call(station)
     new(station).call
@@ -27,6 +31,37 @@ class StreamUrlUpdateService < ApplicationService
     return handle_error('Station is required') unless @station
     return handle_error('Station stream_source is blank') if @station.stream_source.blank?
 
+    with_discovery_lock { discover_with_configured_method }
+  end
+
+  private
+
+  # The default remains the proven Selenium + mitmproxy path. Ferrum can be
+  # exercised independently or used as a recovery path without changing the
+  # listener code or its systemd unit.
+  #
+  # STREAM_DISCOVERY_METHOD=legacy             # default
+  # STREAM_DISCOVERY_METHOD=ferrum             # trial Ferrum only
+  # STREAM_DISCOVERY_METHOD=ferrum_then_legacy # Ferrum, then legacy fallback
+  # STREAM_DISCOVERY_METHOD=legacy_then_ferrum # legacy, then Ferrum fallback
+  def discover_with_configured_method
+    case ENV.fetch('STREAM_DISCOVERY_METHOD', 'legacy')
+    when 'legacy'
+      discover
+    when 'ferrum'
+      FerrumStreamDiscoveryService.call(@station)
+    when 'ferrum_then_legacy'
+      ferrum_result = FerrumStreamDiscoveryService.call(@station)
+      ferrum_result.success? ? ferrum_result : discover
+    when 'legacy_then_ferrum'
+      legacy_result = discover
+      legacy_result.success? ? legacy_result : FerrumStreamDiscoveryService.call(@station)
+    else
+      handle_error("Unknown STREAM_DISCOVERY_METHOD: #{ENV['STREAM_DISCOVERY_METHOD']}")
+    end
+  end
+
+  def discover
     # Check if mitmproxy is running before starting
     unless mitmproxy_running?
       error_msg = "Mitmproxy is not running on #{MITMPROXY_HOST}. Please start it with: mitmproxy --listen-port 8080 --mode regular -s capture_m3u8.py"
@@ -48,7 +83,13 @@ class StreamUrlUpdateService < ApplicationService
       # Navigate to the stream source
       puts "🚀 Navigating to: #{@station.stream_source}"
       Rails.logger.info("Navigating to: #{@station.stream_source}")
-      driver.navigate.to(@station.stream_source)
+      begin
+        driver.navigate.to(@station.stream_source)
+      rescue Selenium::WebDriver::Error::WebDriverError => e
+        # Some video pages close or replace the initial window after the stream
+        # request is sent. Continue because mitmproxy may have captured it.
+        Rails.logger.debug("Navigation ended early: #{e.message}")
+      end
       
       # Wait for page to load and allow time for stream URLs to be captured
       wait_for_page_load(driver)
@@ -101,6 +142,35 @@ class StreamUrlUpdateService < ApplicationService
       
       # Read captured URLs from mitmproxy log
       m3u8_urls = read_mitmproxy_log
+
+      # Some broadcasters publish an HLS source in their page configuration,
+      # but do not request it until a real user interaction occurs. Read that
+      # configuration before falling back to a second browser navigation.
+      if m3u8_urls.empty?
+        m3u8_urls = manifest_urls_from_page(driver)
+      end
+
+      # Selenium's rendered DOM can omit inline configuration scripts. Fetch
+      # the original response as a second source of truth for those players.
+      if m3u8_urls.empty?
+        m3u8_urls = manifest_urls_from_source
+      end
+
+      # Trece is embedded through Dailymotion. Its player gets the temporary
+      # HLS URL from Dailymotion's metadata endpoint rather than directly
+      # loading it on the broadcaster's page.
+      if m3u8_urls.empty?
+        m3u8_urls = dailymotion_manifest_urls(driver)
+      end
+
+      # Some broadcaster pages close Selenium's initial window before the
+      # player starts. Retrying with Chrome's headless DOM renderer still
+      # traverses the page through mitmproxy and captures autoplay streams.
+      if m3u8_urls.empty?
+        capture_with_headless_chrome
+        sleep 3
+        m3u8_urls = read_mitmproxy_log
+      end
       
       if m3u8_urls.any?
         # Select the best URL (longest/most complete, or matches reference pattern)
@@ -183,8 +253,6 @@ class StreamUrlUpdateService < ApplicationService
     end
   end
 
-  private
-
   def create_driver
     proxy_ip = MITMPROXY_HOST
 
@@ -217,6 +285,7 @@ class StreamUrlUpdateService < ApplicationService
     FileUtils.rm_f(lock_file)
 
     options = Selenium::WebDriver::Chrome::Options.new
+    options.add_argument('--headless=new')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-gpu')
@@ -238,6 +307,104 @@ class StreamUrlUpdateService < ApplicationService
     driver = Selenium::WebDriver.for(:chrome, options: options)
     driver.manage.timeouts.implicit_wait = 10
     driver
+  end
+
+  def with_discovery_lock
+    File.open(DISCOVERY_LOCK_PATH, File::RDWR | File::CREAT, 0o600) do |lock_file|
+      begin
+        lock_file.flock(File::LOCK_EX)
+        yield
+      ensure
+        lock_file.flock(File::LOCK_UN)
+      end
+    end
+  end
+
+  def capture_with_headless_chrome
+    command = [
+      'timeout', '45', 'google-chrome', '--headless=new', '--no-sandbox',
+      '--disable-dev-shm-usage', '--disable-gpu', '--ignore-certificate-errors',
+      "--user-agent=#{USER_AGENT}", "--proxy-server=http://#{MITMPROXY_HOST}",
+      '--dump-dom', @station.stream_source
+    ]
+    _stdout, stderr, status = Open3.capture3(*command)
+    Rails.logger.debug("Headless Chrome fallback exited #{status.exitstatus}: #{stderr}") unless status.success?
+  rescue StandardError => e
+    Rails.logger.warn("Headless Chrome fallback failed: #{e.message}")
+  end
+
+  def manifest_urls_from_page(driver)
+    source = driver.page_source
+    urls = extract_manifest_urls(source)
+    Rails.logger.info("Found #{urls.length} manifest URL(s) in page source for station #{@station.id}")
+    urls
+  rescue StandardError => e
+    Rails.logger.debug("Could not read manifest URLs from page source: #{e.message}")
+    []
+  end
+
+  def manifest_urls_from_source
+    urls = extract_manifest_urls(source_page_body)
+    Rails.logger.info("Found #{urls.length} manifest URL(s) in source HTML for station #{@station.id}")
+    urls
+  rescue StandardError => e
+    Rails.logger.debug("Could not read manifest URLs from source HTML: #{e.message}")
+    []
+  end
+
+  def dailymotion_manifest_urls(driver)
+    # The embedded player can close Selenium's window. The original source is
+    # sufficient to identify Dailymotion, so do not let an unavailable browser
+    # session prevent the metadata fallback.
+    source = source_page_body.dup
+    begin
+      source << "\n#{driver.page_source}"
+    rescue StandardError => e
+      Rails.logger.debug("Could not append rendered DOM for Dailymotion: #{e.message}")
+    end
+    video_id = source[%r{dailymotion\.com/player/[^"']*?[?&]video=([A-Za-z0-9]+)}i, 1]
+    return [] if video_id.blank?
+
+    endpoint = "https://www.dailymotion.com/player/metadata/video/#{video_id}?embedder=#{URI.encode_www_form_component(@station.stream_source)}"
+    stdout, stderr, status = Open3.capture3(
+      'curl', '--fail', '--location', '--silent', '--show-error', '--max-time', '30',
+      '--user-agent', USER_AGENT, '--referer', @station.stream_source, endpoint
+    )
+    unless status.success?
+      Rails.logger.debug("Dailymotion metadata request failed: #{stderr}")
+      return []
+    end
+
+    metadata = JSON.parse(stdout)
+    urls = metadata.fetch('qualities', {}).values.flatten.filter_map do |quality|
+      url = quality['url']
+      url if quality['type'].to_s.include?('mpegURL') && url.present?
+    end
+    Rails.logger.info("Found #{urls.length} Dailymotion HLS URL(s) for station #{@station.id}")
+    urls.uniq
+  rescue JSON::ParserError, StandardError => e
+    Rails.logger.debug("Could not resolve Dailymotion manifest: #{e.message}")
+    []
+  end
+
+  def extract_manifest_urls(source)
+    normalized = source.to_s
+                       .gsub('\\/', '/')
+                       .gsub('\\u0026', '&')
+                       .gsub('&amp;', '&')
+    normalized.scan(%r{https?://[^"'<>\s]+\.(?:m3u8|mpd)(?:\?[^"'<>\s]*)?}i).uniq
+  end
+
+  def source_page_body
+    return @source_page_body if defined?(@source_page_body)
+
+    stdout, stderr, status = Open3.capture3(
+      'curl', '--fail', '--location', '--silent', '--show-error', '--max-time', '30',
+      '--user-agent', USER_AGENT, @station.stream_source
+    )
+    raise "Could not fetch station source: #{stderr}" unless status.success?
+
+    @source_page_body = stdout
   end
 
   def configure_timeouts(driver)
@@ -425,8 +592,10 @@ class StreamUrlUpdateService < ApplicationService
     wait = Selenium::WebDriver::Wait.new(timeout: NAVIGATION_WAIT_TIME)
     begin
       wait.until { driver.execute_script('return document.readyState') == 'complete' }
-    rescue Selenium::WebDriver::Error::TimeoutError
-      # Ignore timeout - continue anyway
+    rescue Selenium::WebDriver::Error::WebDriverError => e
+      # Some embedded players close their window after issuing the media request.
+      # The proxy may already have captured the m3u8, so continue to read it.
+      Rails.logger.debug("Page readiness check ended early: #{e.message}")
     end
     
     begin
@@ -435,8 +604,8 @@ class StreamUrlUpdateService < ApplicationService
         doc_ready = driver.execute_script('return document.readyState') == 'complete'
         jquery_ready && doc_ready
       end
-    rescue Selenium::WebDriver::Error::TimeoutError
-      # Ignore timeout - continue anyway
+    rescue Selenium::WebDriver::Error::WebDriverError => e
+      Rails.logger.debug("JavaScript readiness check ended early: #{e.message}")
     end
     
     sleep 1

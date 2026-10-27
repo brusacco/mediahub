@@ -51,7 +51,9 @@ Rails.application.configure do
   # config.assume_ssl = true
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  # The local MediaHub service is accessed on the trusted LAN over HTTP unless
+  # a TLS-terminating reverse proxy is configured in front of it.
+  config.force_ssl = ENV.fetch('FORCE_SSL', 'true') == 'true'
 
   # Log to STDOUT by default
   # config.logger = ActiveSupport::Logger.new($stdout)
