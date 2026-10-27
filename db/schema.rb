@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_04_10_202038) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_27_123000) do
   create_table "active_admin_comments", force: :cascade do |t|
     t.string "namespace"
     t.text "body"
@@ -51,6 +51,25 @@ ActiveRecord::Schema[7.1].define(version: 2025_04_10_202038) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "ingestion_records", force: :cascade do |t|
+    t.bigint "station_id", null: false
+    t.bigint "video_id"
+    t.string "file_name", null: false
+    t.string "source_path"
+    t.datetime "captured_at"
+    t.integer "status", default: 0, null: false
+    t.integer "retry_count", default: 0, null: false
+    t.text "last_error"
+    t.datetime "last_attempt_at"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["station_id", "file_name"], name: "index_ingestion_records_on_station_id_and_file_name", unique: true
+    t.index ["station_id"], name: "index_ingestion_records_on_station_id"
+    t.index ["status"], name: "index_ingestion_records_on_status"
+    t.index ["video_id"], name: "index_ingestion_records_on_video_id"
   end
 
   create_table "admin_users", force: :cascade do |t|
@@ -183,10 +202,13 @@ ActiveRecord::Schema[7.1].define(version: 2025_04_10_202038) do
     t.string "thumbnail_path"
     t.text "ocr_text"
     t.index ["station_id"], name: "index_videos_on_station_id"
+    t.index ["station_id", "location"], name: "index_videos_on_station_id_and_location", unique: true
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "ingestion_records", "stations"
+  add_foreign_key "ingestion_records", "videos"
   add_foreign_key "taggings", "tags"
   add_foreign_key "topic_stat_dailies", "topics"
   add_foreign_key "user_topics", "topics"

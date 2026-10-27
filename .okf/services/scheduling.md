@@ -1,18 +1,20 @@
 ---
 type: Schedule
 title: Scheduled media processing
-description: Cron schedule for importing clips, transcribing, tagging content, and updating topic statistics.
-tags: [cron, transcription, ocr, tagging]
+description: Systemd-owned schedule for importing clips, transcribing, tagging content, and updating topic statistics.
+tags: [systemd, transcription, ocr, tagging]
 generated: { by: process:codex, at: 2026-10-27T12:00:00-03:00 }
-resource: config/schedule.rb
+resource: systemd/mediahub-processing.timer
 ---
 
-# Schedule
+# Schedule ownership
 
-The `whenever` definition runs `process_videos` every minute, tagging every five minutes, and topic statistics hourly. `process_videos` invokes import, transcription, and removal of failed videos in sequence.
+Production scheduling belongs exclusively to systemd timers. `config/schedule.rb` is intentionally empty: do not use `whenever --update-crontab`, and do not add recurring MediaHub commands to user or root cron.
+
+`mediahub-processing.timer` runs the import/transcription pipeline, `mediahub-tagging.timer` runs incremental tagging, and `mediahub-topic-stats.timer` refreshes topic statistics. The complete frequency, locks and verification commands are in [processing schedule](../operations/processing-schedule.md).
 
 # Boundary
 
-Cron processes clips that already exist. It does not start, supervise, or repair live listeners; that is the responsibility of [capture](capture.md) and [channel recovery](../operations/channel-recovery.md).
+Timers process clips already captured. They do not start, supervise, or repair live listeners; that belongs to [capture](capture.md), [system control](../operations/system-control.md), and [channel recovery](../operations/channel-recovery.md).
 
-`whisper-ctranslate2` is resolved from `WHISPER_CTRANSLATE2_BIN` when provided, then from `~/.local/bin/whisper-ctranslate2`, and finally from `PATH`. The RTX 3090 must have sufficient free memory before transcription is enabled.
+`whisper-ctranslate2` uses the configured production binary and the RTX 3090. Current transcription uses the `medium` model in GPU batches of eight; inspect backlog before changing either value.

@@ -1,21 +1,10 @@
 # frozen_string_literal: true
 
-# Use this file to easily define all of your cron jobs.
+# Production scheduling is owned by systemd timers:
+# - mediahub-processing.timer
+# - mediahub-tagging.timer
+# - mediahub-topic-stats.timer
 #
-# It's helpful, but not entirely necessary to understand cron before proceeding.
-# http://en.wikipedia.org/wiki/Cron
-
-set :environment, 'production'
-set :output, 'log/whenever.log'
-
-every 1.minute do
-  rake 'process_videos'
-end
-
-every 5.minutes do
-  rake 'tagger'
-end
-
-every :hour do
-  rake 'topic_stat_daily'
-end
+# This empty Whenever definition intentionally prevents an accidental
+# `whenever --update-crontab` from creating duplicate workers. See
+# .okf/operations/processing-schedule.md.

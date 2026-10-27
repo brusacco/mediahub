@@ -1,20 +1,19 @@
-<nav class="bg-white border-b border-gray-200 shadow-sm">
-  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
+<nav class="site-nav">
+  <div class="dashboard-container">
     <div class="flex h-16 items-center justify-between">
       <!-- Logo and Main Navigation -->
       <div class="flex items-center">
         <%= link_to root_path, class: "flex items-center" do %>
-          <div class="flex-shrink-0">
-            <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-700 bg-clip-text text-transparent">
-              MediaHub
-            </span>
+          <div class="site-nav__brand">
+            <span class="site-nav__mark" aria-hidden="true"><i class="fa-solid fa-wave-square"></i></span>
+            <span>Media<span>HUB</span></span>
           </div>
         <% end %>
         
         <!-- Desktop Navigation -->
         <div class="hidden md:ml-10 md:block">
           <div class="flex items-baseline space-x-1">
-            <%= link_to "Inicio", root_path, class: "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 #{request.path == root_path ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}" %>
+            <%= link_to "Inicio", root_path, class: "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 #{request.path == root_path ? 'bg-slate-100 text-slate-950' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'}" %>
             
             <!-- Dropdown de Tópicos -->
             <div class="relative" data-controller="dropdown" data-dropdown-open-value="false">

@@ -1,82 +1,79 @@
 <% content_for :extra_stylesheets do %>
   <link href="https://cdn.datatables.net/v/dt/jq-3.7.0/dt-2.1.6/datatables.min.css" rel="stylesheet">
-  <style>
-    .dataTables_wrapper .dataTables_paginate .paginate_button {
-      color: inherit !important;
-      border: none !important;
-      background: none !important;
-    }
-    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-      background: none !important;
-    }
-    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
-      color: inherit !important;
-    }
-  </style>
 <% end %>
 
 <% content_for :extra_javascripts do %>
   <script src="https://cdn.datatables.net/v/dt/jq-3.7.0/dt-2.1.6/datatables.min.js"></script>
 <% end %>
 
-<div class="mb-8">
-  <h2 class="text-2xl font-bold tracking-tight text-gray-900 mb-6"><%= title %></h2>
-  <div class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg overflow-hidden">
-    <div class="p-6">
-      <div data-controller="datatable">
-        <table id="videos-table" class="videos-datatable min-w-full divide-y divide-gray-300 display cell-border" style="width:100%">
-          <thead class="bg-gray-50">
+<section class="video-table mb-8" aria-labelledby="videos-table-title">
+  <header class="video-table__header">
+    <div>
+      <span class="eyebrow">Archivo audiovisual</span>
+      <h2 id="videos-table-title"><%= title %></h2>
+    </div>
+    <span class="video-table__count"><i class="fa-solid fa-film" aria-hidden="true"></i> <%= number_with_delimiter(videos.count, delimiter: ".") %> clips</span>
+  </header>
+
+  <div class="video-table__panel">
+    <div class="video-table__scroll" data-controller="datatable">
+      <table id="videos-table" class="videos-datatable video-table__data display" style="width:100%">
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Vista previa</th>
+            <th scope="col">Transcripción</th>
+            <th scope="col">Etiquetas</th>
+            <th scope="col">Señal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% videos.each do |video| %>
             <tr>
-              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Fecha</th>
-              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Imagen</th>
-              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Transcripcion</th>
-              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Etiquetas</th>
-              <th scope="col" class="relative px-3 py-3.5 text-left text-sm font-semibold text-gray-900 pr-8">Estacion</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <% videos.each do |video| %>
-              <tr class="hover:bg-gray-50 transition-colors duration-150">
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 font-medium" data-sort="<%= video.posted_at.strftime("%Y%m%d%H%M%s") %>">
-                  <time datetime="<%= video.posted_at.iso8601 %>">
-                    <%= video.posted_at.strftime("%d-%m-%Y") %>
-                  </time>
-                  <div class="text-xs text-gray-500 mt-1">
-                    <%= video.posted_at.strftime("%H:%M") %>
-                  </div>
-                </td>
-                <td class="px-3 py-4 text-sm text-gray-500">
-                  <%= link_to image_tag("/#{video.thumbnail_path}", size: 480, loading: 'lazy', onerror: 'this.onerror=null;this.src="https://via.placeholder.com/300x250";'), video_path(video), class: "hover:opacity-80 transition-opacity" %>
-                </td>
-                <td class="px-3 py-4 text-sm text-gray-900">     
-                  <% if video.tag_list.present? %>
-                    <%= highlight(video.transcription, video.all_tags_boundarys) -%>
-                  <% else %>
-                    <%= video.transcription %>
+              <td class="video-table__date" data-sort="<%= video.posted_at.strftime('%Y%m%d%H%M%s') %>">
+                <time datetime="<%= video.posted_at.iso8601 %>"><%= video.posted_at.strftime('%d %b %Y') %></time>
+                <span><%= video.posted_at.strftime('%H:%M') %></span>
+              </td>
+              <td class="video-table__preview">
+                <%= link_to video_path(video), class: "video-table__thumbnail", aria: { label: "Abrir clip de #{video.station.name}" } do %>
+                  <% if video.thumbnail_path.present? %>
+                    <%= image_tag "/#{video.thumbnail_path}", loading: "lazy", alt: "Vista previa de #{video.station.name}", onerror: "this.remove();this.parentElement.classList.add('video-table__thumbnail--missing');" %>
                   <% end %>
-                </td>
-                <td class="px-3 py-4 text-xs">
-                  <div class="flex flex-wrap gap-1">
-                    <% video.tag_list.first(5).each do |tag| %>
-                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        <%= tag %>
-                      </span>
+                  <span class="video-table__play"><i class="fa-solid fa-play" aria-hidden="true"></i></span>
+                <% end %>
+              </td>
+              <td class="video-table__transcript">
+                <%= link_to video_path(video), class: "video-table__transcript-link" do %>
+                  <% if video.transcription.present? %>
+                    <% if video.tag_list.present? %>
+                      <%= highlight(video.transcription, video.all_tags_boundarys) %>
+                    <% else %>
+                      <%= video.transcription %>
                     <% end %>
-                    <% if video.tag_list.count > 5 %>
-                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                        +<%= video.tag_list.count - 5 %>
-                      </span>
-                    <% end %>
+                  <% else %>
+                    <span class="video-table__pending">Transcripción pendiente</span>
+                  <% end %>
+                <% end %>
+              </td>
+              <td class="video-table__tags">
+                <% if video.tag_list.present? %>
+                  <div class="video-table__tag-list">
+                    <% video.tag_list.first(4).each do |tag| %><span><%= tag %></span><% end %>
+                    <% if video.tag_list.count > 4 %><span class="video-table__tag-more">+<%= video.tag_list.count - 4 %></span><% end %>
                   </div>
-                </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
-                  <%= video.station.name %>
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
+                <% else %>
+                  <span class="video-table__muted">Sin etiquetas</span>
+                <% end %>
+              </td>
+              <td class="video-table__station">
+                <%= link_to station_path(video.station), class: "video-table__station-link" do %>
+                  <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i><span><%= video.station.name %></span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
     </div>
   </div>
-</div>
+</section>

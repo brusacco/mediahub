@@ -1,227 +1,80 @@
 <% content_for :extra_stylesheets do %>
-  <style>
-    /* Ensure grid lines are visible for all charts */
-    .highcharts-grid-line {
-      stroke: #E5E7EB !important;
-      stroke-width: 1px !important;
-      opacity: 1 !important;
-    }
-    .highcharts-yaxis-grid .highcharts-grid-line {
-      stroke: #E5E7EB !important;
-      stroke-width: 1px !important;
-      opacity: 1 !important;
-    }
-    .highcharts-xaxis-grid .highcharts-grid-line {
-      stroke: #E5E7EB !important;
-      stroke-width: 1px !important;
-      opacity: 1 !important;
-    }
-  </style>
+  <style>.highcharts-grid-line { stroke: #e2e8f0 !important; stroke-width: 1px !important; }</style>
 <% end %>
 
-<!-- Hero Section: Dashboard Overview -->
-<section class="relative bg-gradient-to-br from-indigo-50 via-white to-slate-50 py-12 lg:py-16">
-  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
-    <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl lg:text-5xl">
-        Dashboard de MediaHub
-      </h1>
-      <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-        Análisis y visualización de contenido multimedia en tiempo real
-      </p>
+<% topic_summaries = @topicos.map do |topic| %>
+  <% videos = topic.list_videos %>
+  <% { topic: topic, videos: videos, clips: videos.count, stations: videos.distinct.count(:station_id), tags: topic.tags.count } %>
+<% end %>
+<% total_clips = topic_summaries.sum { |summary| summary[:clips] } %>
+<% total_stations = topic_summaries.sum { |summary| summary[:stations] } %>
+
+<div class="dashboard-shell">
+  <section class="dashboard-hero">
+    <div class="dashboard-container dashboard-hero__content">
+      <div class="dashboard-hero__copy">
+        <div class="eyebrow eyebrow--light"><span class="live-dot" aria-hidden="true"></span>Centro de monitoreo</div>
+        <h1>La conversación pública,<br><span>en contexto.</span></h1>
+        <p>Seguimiento editorial de señales, clips y temas relevantes en una sola vista.</p>
+      </div>
+      <div class="dashboard-hero__status" aria-label="Resumen del monitoreo">
+        <span class="status-label">Ventana de análisis</span>
+        <strong>Últimos <%= DAYS_RANGE %> días</strong>
+        <span class="status-meta"><i class="fa-regular fa-clock" aria-hidden="true"></i> Actualizado con cada nueva captura</span>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- Section: Mis Temas en Monitoreo -->
-<section class="py-12 lg:py-16 bg-white">
-  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-3xl font-bold text-gray-900">
-        <i class="fa-solid fa-list-check text-indigo-600 mr-3"></i>
-        Mis Temas en Monitoreo
-      </h2>
-      <span class="text-sm text-gray-500"><%= @topicos.count %> <%= @topicos.count == 1 ? 'tema activo' : 'temas activos' %></span>
-    </div>
+  <main class="dashboard-main">
+    <div class="dashboard-container">
+      <section class="metric-grid" aria-label="Resumen operativo">
+        <article class="metric-card"><span class="metric-card__icon metric-card__icon--indigo"><i class="fa-solid fa-layer-group"></i></span><div><span class="metric-card__label">Temas monitoreados</span><strong><%= number_with_delimiter(@topicos.count) %></strong></div></article>
+        <article class="metric-card"><span class="metric-card__icon metric-card__icon--sky"><i class="fa-solid fa-play"></i></span><div><span class="metric-card__label">Clips relevantes</span><strong><%= number_with_delimiter(total_clips, delimiter: ".") %></strong></div></article>
+        <article class="metric-card"><span class="metric-card__icon metric-card__icon--emerald"><i class="fa-solid fa-tower-broadcast"></i></span><div><span class="metric-card__label">Señales con hallazgos</span><strong><%= number_with_delimiter(total_stations) %></strong></div></article>
+        <article class="metric-card metric-card--quiet"><span class="metric-card__icon metric-card__icon--slate"><i class="fa-solid fa-calendar-day"></i></span><div><span class="metric-card__label">Período activo</span><strong><%= DAYS_RANGE %> días</strong></div></article>
+      </section>
 
-    <% if @topicos.any? %>
-      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        <% @topicos.each do |topic| %>
-          <% 
-            videos = topic.list_videos
-            total_clips = videos.count
-            stations_count = videos.joins(:station).distinct.count('stations.id')
-            tags_count = topic.tags.count
-          %>
-          <div class="bg-white rounded-xl shadow-lg border-2 border-gray-200 hover:border-indigo-400 hover:shadow-2xl transition-all duration-300 p-6 group">
-            <!-- Topic Header -->
-            <div class="mb-4">
-              <h3 class="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                <%= topic.name %>
-              </h3>
-            </div>
-
-            <!-- Mini KPIs Grid -->
-            <div class="grid grid-cols-3 gap-4 mb-6">
-              <div class="text-center">
-                <p class="text-xs text-gray-500 mb-1">Clips</p>
-                <p class="text-2xl font-bold text-indigo-600"><%= number_with_delimiter(total_clips) %></p>
-              </div>
-              <div class="text-center">
-                <p class="text-xs text-gray-500 mb-1">Estaciones</p>
-                <p class="text-2xl font-bold text-purple-600"><%= number_with_delimiter(stations_count) %></p>
-              </div>
-              <div class="text-center">
-                <p class="text-xs text-gray-500 mb-1">Etiquetas</p>
-                <p class="text-2xl font-bold text-teal-600"><%= number_with_delimiter(tags_count) %></p>
-              </div>
-            </div>
-
-            <!-- View Topic Button -->
-            <%= link_to topic_path(topic), class: "w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm" do %>
-              <i class="fa-solid fa-chart-line mr-2"></i>
-              Ver Análisis Completo
+      <section class="dashboard-section" aria-labelledby="topics-heading">
+        <div class="section-heading"><div><span class="eyebrow">Seguimiento personalizado</span><h2 id="topics-heading">Temas en monitoreo</h2><p>Accedé a los hallazgos, fuentes y evolución de cada tema.</p></div><span class="section-count"><%= @topicos.count %> activos</span></div>
+        <% if topic_summaries.any? %>
+          <div class="topic-grid">
+            <% topic_summaries.each do |summary| %>
+              <% topic = summary[:topic] %>
+              <article class="topic-card">
+                <div class="topic-card__header"><span class="topic-card__marker"><i class="fa-solid fa-chart-line"></i></span><span class="topic-card__eyebrow">Tema activo</span></div>
+                <h3><%= topic.name %></h3>
+                <dl class="topic-card__metrics"><div><dt>Clips</dt><dd><%= number_with_delimiter(summary[:clips], delimiter: ".") %></dd></div><div><dt>Señales</dt><dd><%= number_with_delimiter(summary[:stations]) %></dd></div><div><dt>Etiquetas</dt><dd><%= number_with_delimiter(summary[:tags]) %></dd></div></dl>
+                <%= link_to topic_path(topic), class: "topic-card__link" do %>Explorar análisis <i class="fa-solid fa-arrow-right"></i><% end %>
+              </article>
             <% end %>
           </div>
+        <% else %>
+          <div class="empty-state"><span class="empty-state__icon"><i class="fa-solid fa-compass"></i></span><h3>Aún no tenés temas asignados</h3><p>Cuando se active un tema de monitoreo, sus clips y análisis aparecerán aquí.</p></div>
         <% end %>
-      </div>
-    <% else %>
-      <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-12 text-center">
-        <i class="fa-solid fa-inbox text-6xl text-gray-300 mb-4"></i>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">No hay temas activos</h3>
-        <p class="text-gray-600">Contacta con tu administrador para que te asigne temas para monitorear.</p>
-      </div>
-    <% end %>
-  </div>
-</section>
+      </section>
 
-<!-- Section: Analytics Charts -->
-<section class="py-12 lg:py-16 bg-white">
-  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
-    <!-- Section Header -->
-    <div class="mb-10">
-      <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-        Análisis de Contenido
-      </h2>
-      <p class="mt-2 text-base text-gray-600">
-        Estadísticas y tendencias de clips por tópico y período
-      </p>
-    </div>
-
-    <!-- Charts Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-      <!-- Chart 1: Clips por Día por Tópico -->
-      <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 p-6 lg:p-8">
-        <div class="mb-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">
-            Clips por Día por Tópico
-          </h3>
-          <p class="text-sm text-gray-500">
-            Evolución temporal de clips agrupados por tópico
-          </p>
+      <section class="dashboard-section dashboard-section--muted" aria-labelledby="insights-heading">
+        <div class="section-heading"><div><span class="eyebrow">Panorama</span><h2 id="insights-heading">Evolución de la cobertura</h2><p>Volumen de hallazgos y distribución reciente por tema.</p></div></div>
+        <div class="insight-grid">
+          <article class="insight-card"><div class="insight-card__heading"><h3>Clips por día</h3><span>Histórico</span></div><%= line_chart @video_quantities, xtitle: "Fecha", ytitle: "Clips", thousands: ".", curve: false, adapter: "highcharts", library: { chart: { backgroundColor: "transparent" }, plotOptions: { series: { dataLabels: { enabled: false } } } } %></article>
+          <article class="insight-card"><div class="insight-card__heading"><h3>Últimas 24 horas</h3><span>Por tema</span></div><%= bar_chart @videos_last_day_topics, xtitle: "Tema", ytitle: "Clips", thousands: ".", adapter: "highcharts", library: { chart: { backgroundColor: "transparent" }, plotOptions: { series: { dataLabels: { enabled: false } } } } %></article>
         </div>
-        <div class="chart-container">
-          <%= line_chart @video_quantities, 
-                xtitle: "Fecha", 
-                ytitle: "Cant. Clips", 
-                thousands: ".", 
-                curve: false,
-                adapter: 'highcharts',
-                library: {
-                  chart: {
-                    backgroundColor: 'white'
-                  },
-                  plotOptions: {
-                    series: {
-                      dataLabels: {
-                        enabled: true
-                      }
-                    }
-                  }
-                } %>
+      </section>
+
+      <section class="dashboard-section" aria-labelledby="words-heading">
+        <div class="section-heading"><div><span class="eyebrow">Lenguaje predominante</span><h2 id="words-heading">Palabras que marcan la agenda</h2><p>Términos más frecuentes dentro de los clips relevantes recientes.</p></div></div>
+        <div class="word-cloud-card">
+          <% if @word_occurrences.present? %>
+            <% min_max = find_max_and_min_occurrences(@word_occurrences) %>
+            <ul class="cloud" aria-label="Nube de palabras"><% @word_occurrences.shuffle { |a, b| a[1] <=> b[1] }.each do |word, value| %><li data-weight="<%= normalize_to_scale(value, min_max[:max], min_max[:min]) %>"><%= word %></li><% end %></ul>
+          <% else %><p class="word-cloud-card__empty">Todavía no hay suficiente texto procesado para mostrar tendencias.</p><% end %>
         </div>
-      </div>
+      </section>
 
-      <!-- Chart 2: Clips últimas 24 horas -->
-      <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 p-6 lg:p-8">
-        <div class="mb-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">
-            Clips en las últimas 24 horas
-          </h3>
-          <p class="text-sm text-gray-500">
-            Distribución de clips por tópico en el último día
-          </p>
-        </div>
-        <div class="chart-container">
-          <%= bar_chart @videos_last_day_topics, 
-                xtitle: "Tópico", 
-                ytitle: "Cant. Clips", 
-                thousands: ".", 
-                adapter: 'highcharts',
-                library: {
-                  chart: {
-                    backgroundColor: 'white'
-                  },
-                  plotOptions: {
-                    series: {
-                      dataLabels: {
-                        enabled: true
-                      }
-                    }
-                  }
-                } %>
-        </div>
-      </div>
+      <section class="dashboard-section dashboard-section--clips" aria-labelledby="recent-heading">
+        <div class="section-heading"><div><span class="eyebrow">Archivo reciente</span><h2 id="recent-heading">Últimos hallazgos</h2><p>Clips relevantes organizados por tema de interés.</p></div></div>
+        <div class="recent-topic-groups"><% topic_summaries.each do |summary| %><% next if summary[:videos].empty? %><%= render partial: "videos/videos", locals: { last_videos: summary[:videos].limit(12), title: summary[:topic].name } %><% end %></div>
+      </section>
     </div>
-  </div>
-</section>
-
-<!-- Section: Word Cloud -->
-<section class="py-12 lg:py-16 bg-slate-50">
-  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
-    <!-- Section Header -->
-    <div class="text-center mb-10">
-      <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-        Nube de Palabras
-      </h2>
-      <p class="mt-2 text-base text-gray-600 max-w-2xl mx-auto">
-        Visualización de las palabras más frecuentes en los clips recientes
-      </p>
-    </div>
-
-    <!-- Word Cloud Container -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 lg:p-12">
-      <div class="min-h-[400px] flex items-center justify-center">
-        <% min_max = find_max_and_min_occurrences(@word_occurrences) %>
-        <ul class="cloud">
-          <% @word_occurrences.shuffle { |a, b| a[1] <=> b[1] }.each do |word, value| %>
-            <li data-weight="<%= normalize_to_scale(value, min_max[:max], min_max[:min]) %>"><%= word %></li>
-          <% end %>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Section: Recent Clips by Topic -->
-<section class="py-12 lg:py-16 bg-white">
-  <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
-    <!-- Section Header -->
-    <div class="mb-10">
-      <h2 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-        Clips Recientes
-      </h2>
-      <p class="mt-2 text-base text-gray-600">
-        Últimos clips organizados por tópico de interés
-      </p>
-    </div>
-
-    <!-- Clips Grid -->
-    <div class="space-y-12">
-      <% @topicos.each do |topic| %>
-        <% next if topic.list_videos.empty? %>
-        <%= render partial: 'videos/videos', locals: { last_videos: topic.list_videos.limit(12), title: topic.name } %>
-      <% end %>
-    </div>
-  </div>
-</section>
+  </main>
+</div>

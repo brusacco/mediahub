@@ -1,0 +1,10 @@
+[Unit]
+Description=MediaHub host health snapshot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/mediahub/bin/mediahub-host-monitor
+Nice=10
+IOSchedulingClass=idle

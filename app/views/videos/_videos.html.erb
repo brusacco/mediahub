@@ -1,8 +1,9 @@
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8">
-  <div class="mb-6">
-    <h2 class="text-xl font-semibold text-gray-900 sm:text-2xl"><%= title %></h2>
+<div class="video-collection">
+  <div class="video-collection__heading">
+    <h3><%= title %></h3>
+    <span>Últimos clips</span>
   </div>
-  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     <%= render partial: 'videos/video', collection: last_videos, as: :video, cached: true %>
   </div>
 </div>

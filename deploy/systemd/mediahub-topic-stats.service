@@ -1,0 +1,14 @@
+[Unit]
+Description=MediaHub daily topic statistics
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=artigas
+WorkingDirectory=/opt/mediahub
+Environment=RAILS_ENV=production
+TimeoutStartSec=15min
+Nice=10
+IOSchedulingClass=best-effort
+ExecStart=/bin/bash -lc 'source /etc/profile.d/rvm.sh && exec bundle exec rake topic_stat_daily'

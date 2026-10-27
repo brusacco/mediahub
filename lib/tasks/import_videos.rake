@@ -8,9 +8,9 @@ task import_videos: :environment do
   
   Station.find_each do |station|
     # Process files from temp directory (new recordings)
-    temp_directory = Rails.public_path.join('videos', station.directory, 'temp')
-    
-    if Dir.exist?(temp_directory)
+    CaptureStorageService.pending_directories(station).each do |temp_directory|
+      next unless Dir.exist?(temp_directory)
+
       Dir.glob(File.join(temp_directory, '*.mp4')).each do |file|
         result = VideoImportService.call(station, file)
         

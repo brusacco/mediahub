@@ -3,8 +3,8 @@
 %>
 
 <% if nav_items.any? %>
-  <nav class="border-b border-gray-200 shadow-md bg-white" id="topic-nav" data-controller="sticky-nav">
-    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-12 xl:px-16">
+  <nav class="context-nav" id="topic-nav" data-controller="sticky-nav">
+    <div class="dashboard-container">
       <div class="flex items-center justify-between h-12 overflow-x-auto scrollbar-hide">
         <div class="flex space-x-1 md:space-x-4">
           <% nav_items.each do |item| %>

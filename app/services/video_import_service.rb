@@ -2,6 +2,7 @@
 
 require 'open3'
 require 'fileutils'
+require 'ostruct'
 require 'shellwords'
 
 class VideoImportService < ApplicationService
@@ -20,6 +21,8 @@ class VideoImportService < ApplicationService
   end
 
   def call
+    @ingestion_record = IngestionRecord.track_capture!(@station, @file)
+
     # Check if file exists
     unless File.exist?(@file)
       return handle_error('File does not exist')
@@ -27,11 +30,11 @@ class VideoImportService < ApplicationService
     
     # Only check if file is in use if it's in temp directory (being written)
     if file_in_temp_directory? && file_in_use?
-      return handle_error('File is in use')
+      return handle_deferred('Segment is still being written')
     end
 
     if file_in_temp_directory? && File.size(@file) < MINIMUM_TEMP_SEGMENT_SIZE_BYTES
-      return handle_error("Segment is too small to import (minimum #{MINIMUM_TEMP_SEGMENT_SIZE_BYTES} bytes)")
+      return handle_deferred("Segment is not complete yet (minimum #{MINIMUM_TEMP_SEGMENT_SIZE_BYTES} bytes)")
     end
     
     unless valid_filename?
@@ -46,10 +49,11 @@ class VideoImportService < ApplicationService
       return handle_error('Invalid video file')
     end
 
-    segment_validation = StreamSegmentValidationService.call(@file)
+    segment_validation = StreamSegmentValidationService.call(@file, station: @station)
     unless segment_validation.success?
       return handle_error("Invalid stream segment: #{segment_validation.error}")
     end
+    @ingestion_record.mark_validated!
 
     # Calculate destination path
     destination_path = calculate_destination_path
@@ -61,7 +65,10 @@ class VideoImportService < ApplicationService
       if existing_video.path != destination_path && File.exist?(destination_path)
         existing_video.update(path: destination_path, public_path: Pathname.new(destination_path).relative_path_from(Rails.public_path).to_s)
       end
-      generate_thumbnail_if_needed(existing_video)
+      @ingestion_record.mark_imported!(existing_video)
+      return handle_error('Failed to generate thumbnail/OCR') unless generate_thumbnail_if_needed(existing_video)
+
+      @ingestion_record.mark_thumbnail_ocr!
       return handle_success(existing_video)
     end
 
@@ -78,8 +85,11 @@ class VideoImportService < ApplicationService
       Rails.logger.error("Failed to create video record: #{@filename}")
       return handle_error('Failed to create video record')
     end
+    @ingestion_record.mark_imported!(video)
 
-    generate_thumbnail_if_needed(video)
+    return handle_error('Failed to generate thumbnail/OCR') unless generate_thumbnail_if_needed(video)
+
+    @ingestion_record.mark_thumbnail_ocr!
 
     handle_success(video)
   rescue StandardError => e
@@ -89,6 +99,22 @@ class VideoImportService < ApplicationService
   end
 
   private
+
+  def handle_deferred(reason)
+    @ingestion_record&.defer!(reason)
+    OpenStruct.new(success?: false, error: reason)
+  rescue StandardError => e
+    Rails.logger.warn("Could not record deferred ingestion for #{@filename}: #{e.message}")
+    OpenStruct.new(success?: false, error: reason)
+  end
+
+  def handle_error(error)
+    @ingestion_record&.fail!(error)
+    super(error)
+  rescue StandardError => e
+    Rails.logger.warn("Could not record failed ingestion for #{@filename}: #{e.message}")
+    super(error)
+  end
 
   def file_in_temp_directory?
     @file.include?('/temp/')
@@ -179,12 +205,14 @@ class VideoImportService < ApplicationService
   end
 
   def generate_thumbnail_if_needed(video)
-    return if video.thumbnail_path.present? && File.exist?(video.path)
+    thumbnail = video.thumbnail_path.present? && Rails.public_path.join(video.thumbnail_path).to_s
+    return true if thumbnail && File.file?(thumbnail)
 
     video.generate_thumbnail
-    video.save!
+    video.reload.thumbnail_path.present? && File.file?(Rails.public_path.join(video.thumbnail_path))
   rescue StandardError => e
     Rails.logger.error("Error generating thumbnail: #{e.message}")
+    false
   end
 end
 

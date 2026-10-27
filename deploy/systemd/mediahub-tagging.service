@@ -1,0 +1,15 @@
+[Unit]
+Description=MediaHub incremental video tagging
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=artigas
+WorkingDirectory=/opt/mediahub
+Environment=RAILS_ENV=production
+Environment=TAGGING_LIMIT=250
+TimeoutStartSec=15min
+Nice=10
+IOSchedulingClass=best-effort
+ExecStart=/bin/bash -lc 'source /etc/profile.d/rvm.sh && exec bundle exec rake tagger'

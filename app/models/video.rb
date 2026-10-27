@@ -8,14 +8,16 @@ class Video < ApplicationRecord
 
   acts_as_taggable_on :tags
   belongs_to :station
+  has_one :ingestion_record, dependent: :nullify
 
   after_destroy :cleanup_files
 
-  scope :no_transcription, -> { where(transcription: nil) }
-  scope :has_transcription, -> { where.not(transcription: nil) }
+  scope :no_transcription, -> { where("COALESCE(TRIM(transcription), '') = ''") }
+  scope :has_transcription, -> { where("COALESCE(TRIM(transcription), '') <> ''") }
   scope :no_thumbnail, -> { where(thumbnail_path: nil) }
-  scope :no_ocr_text, -> { where(ocr_text: nil).or(where(ocr_text: '')) }
-  scope :has_ocr_text, -> { where.not(ocr_text: nil).where.not(ocr_text: '') }
+  scope :no_ocr_text, -> { where("COALESCE(TRIM(ocr_text), '') = ''") }
+  scope :has_ocr_text, -> { where("COALESCE(TRIM(ocr_text), '') <> ''") }
+  scope :pending_tagging, -> { has_transcription.where(tags_processed_at: nil) }
   scope :normal_range, -> { where(posted_at: DAYS_RANGE.days.ago..) }
 
   def directories

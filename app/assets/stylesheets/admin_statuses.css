@@ -1,0 +1,6 @@
+/* Operational state language for ActiveAdmin. The label reinforces the colour. */
+.status_tag.status--success, .status_tag.healthy, .status_tag.validated, .status_tag.transcribed, .status_tag.al_dia, .status_tag.si { background: #16794a; color: #fff; }
+.status_tag.status--progress, .status_tag.captured, .status_tag.imported, .status_tag.thumbnail_ocr, .status_tag.renewing, .status_tag.capturing { background: #a86600; color: #fff; }
+.status_tag.status--warning, .status_tag.paused, .status_tag.pausada { background: #806000; color: #fff; }
+.status_tag.status--error, .status_tag.failed, .status_tag.attention, .status_tag.disconnected { background: #b42318; color: #fff; }
+.status_tag.status--neutral, .status_tag.no { background: #586174; color: #fff; }

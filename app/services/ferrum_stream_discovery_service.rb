@@ -40,7 +40,12 @@ class FerrumStreamDiscoveryService < ApplicationService
     return handle_error('No .m3u8 or .mpd URL found via Ferrum') if manifest_urls.empty?
 
     best_url = select_best_url(manifest_urls)
-    @station.update!(stream_url: best_url)
+    promotion = StreamSourcePromotionService.call(
+      @station, best_url, resolver: 'ferrum',
+      headers: { 'Referer' => @station.stream_source, 'User-Agent' => USER_AGENT }
+    )
+    return promotion unless promotion.success?
+
     @station.add_log_entry("Ferrum renewed stream URL: #{redacted_url(best_url)}")
     Rails.logger.info("Ferrum renewed stream URL for station #{@station.id}")
     handle_success(best_url)

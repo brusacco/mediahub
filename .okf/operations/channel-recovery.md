@@ -22,6 +22,8 @@ resource: lib/tasks/stream/listen_station.rake
 4. If renewal fails, inspect that instance's journal and the station source or play selector. For pages that declare a manifest in their HTML, verify the embedded HLS/DASH URL; for Dailymotion, verify the public player metadata has an HLS quality.
 5. Enable further stations only after the first listener produces a segment.
 
+If FFmpeg exits by signal 8 or diagnostics report discontinuous audio timestamps, keep the source candidate unchanged and use the [FFmpeg SIGFPE runbook](ffmpeg-sigfpe.md). This failure family is different from a failed URL renewal.
+
 # Rollback
 
 Stop the listener for the tested station and preserve its logs. Do not overwrite a known-good URL until the candidate passes the FFmpeg probe.

@@ -1,0 +1,15 @@
+[Unit]
+Description=MediaHub ingest and transcription batch
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=artigas
+WorkingDirectory=/opt/mediahub
+Environment=RAILS_ENV=production
+Environment=TRANSCRIPTION_BATCH_SIZE=8
+TimeoutStartSec=45min
+Nice=10
+IOSchedulingClass=best-effort
+ExecStart=/bin/bash -lc 'source /etc/profile.d/rvm.sh && exec bundle exec rake process_videos'

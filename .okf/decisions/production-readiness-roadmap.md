@@ -9,7 +9,7 @@ resource: .
 
 # Decision
 
-MediaHub is suitable for a supervised pilot, but is **not yet production-ready**. It can capture and transcribe, and it now prevents the known NPY expired-session slate from generating a heartbeat. It does not yet provide the reliability, audit trail, alerting, storage guarantees, or automated test coverage required for unattended long-term monitoring.
+MediaHub is suitable for a supervised pilot, but is **not yet production-ready**. It can capture and transcribe, prevents the known NPY expired-session slate from generating a heartbeat, and now records capture sessions/events, stages new segments privately, validates source candidates before promotion, and holds processing failures for review. It still lacks external alerting, durable job workers, backup/restore discipline, and automated failure fixtures required for unattended long-term monitoring.
 
 The near-term decision is to retain Rails, FFmpeg, the existing Selenium + mitmproxy discovery path, and systemd. Ferrum remains a manual diagnostic option only. Do not replace the capture stack wholesale before measuring the baseline and proving each change on a canary channel.
 
@@ -47,6 +47,8 @@ The `Station` record remains channel configuration. Operational facts must move 
 # Required features
 
 ## P0 — correctness and operational safety
+
+The first implementation of P0 is in place: capture sessions/events, a non-blocking per-station owner lock, candidate preflight/promotion/rollback, private staging for new segments, idempotent ingest keys, and configurable audio/video/content validation. Follow-up work is regression coverage and operational tuning of channel-specific rules.
 
 Implement these before calling the system production-ready.
 
@@ -144,4 +146,5 @@ Implement these before calling the system production-ready.
 - Use Ferrum only through a manually invoked diagnostic run and record the result in the station log.
 - Regard every discovered playlist as short-lived session output. The stable recovery input is the channel's public source page plus its resolver configuration, never the previous signed playlist alone.
 - Enable new channels only after one validated segment and a successful renewal drill.
-- Do not run the backlog-wide `process_videos` or transcription tasks until their queues, rejection handling and capacity limits are in place.
+- Production processing is timer-owned: `mediahub-processing.timer` performs the normal import/transcription pass, while tagging and topic statistics use separate timers. Manual Rake execution is for bounded diagnosis or recovery, not recurring scheduling. Failed records are retained for review rather than deleted.
+- The current prioritized residual work is maintained in [production open work](open-work.md).

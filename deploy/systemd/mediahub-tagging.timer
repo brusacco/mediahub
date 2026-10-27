@@ -1,0 +1,12 @@
+[Unit]
+Description=Schedule MediaHub incremental video tagging
+
+[Timer]
+OnBootSec=6min
+OnUnitInactiveSec=10min
+Persistent=true
+AccuracySec=30s
+Unit=mediahub-tagging.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# frozen_string_literal: true
+
+# Operational control surface for the MediaHub production stack. It delegates
+# ownership to systemd; it never launches Rails, FFmpeg, or a listener directly.
+# RVM's shell helpers access optional variables that are intentionally unset;
+# do not use `nounset` while this command sources the production RVM profile.
+set -eo pipefail
+
+APP_ROOT="${MEDIAHUB_ROOT:-/opt/mediahub}"
+WEB_SERVICE="mediahub-web.service"
+PROXY_SERVICE="mediahub-mitmproxy.service"
+MONITOR_TIMER="mediahub-host-monitor.timer"
+PROCESSING_TIMER="mediahub-processing.timer"
+TAGGING_TIMER="mediahub-tagging.timer"
+TOPIC_STATS_TIMER="mediahub-topic-stats.timer"
+
+usage() {
+  cat <<'USAGE'
+Usage: mediahub <start|stop|status|enable|disable> [--stations ID,ID]
+
+  start    Start Rails, capture services, monitoring, and processing timers.
+  stop     Stop capture and processing work, then the proxy and Rails.
+  status   Show the state of the application services and listeners.
+  enable   Make the selected listeners start automatically after a server boot.
+  disable  Prevent selected listeners from starting automatically after a boot.
+
+Without --stations, listener actions use every active Station in the database.
+Set MEDIAHUB_STATION_IDS=28,29 to override that selection non-interactively.
+USAGE
+}
+
+ACTION="${1:-}"
+[[ -n "$ACTION" ]] || { usage; exit 2; }
+shift || true
+
+if [[ "$ACTION" == "-h" || "$ACTION" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+STATION_IDS="${MEDIAHUB_STATION_IDS:-}"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --stations)
+      STATION_IDS="${2:-}"
+      [[ -n "$STATION_IDS" ]] || { echo "--stations requires IDs" >&2; exit 2; }
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+case "$ACTION" in
+  start|stop|status|enable|disable) ;;
+  *) echo "Unknown command: $ACTION" >&2; usage >&2; exit 2 ;;
+esac
+
+cd "$APP_ROOT"
+
+database_station_ids() {
+  source /etc/profile.d/rvm.sh
+  RAILS_ENV=production bundle exec rails runner 'puts Station.active.order(:id).pluck(:id).join(",")' 2>/dev/null
+}
+
+selected_station_ids() {
+  local raw="${STATION_IDS:-}"
+  [[ -n "$raw" ]] || raw="$(database_station_ids)"
+  [[ -n "$raw" ]] || return 0
+
+  local id
+  IFS=',' read -r -a ids <<< "$raw"
+  for id in "${ids[@]}"; do
+    [[ "$id" =~ ^[0-9]+$ ]] || { echo "Invalid station ID: $id" >&2; exit 2; }
+    printf '%s\n' "$id"
+  done
+}
+
+active_listener_units() {
+  systemctl list-units --type=service --state=active --no-legend 'mediahub-listener@*.service' \
+    | awk '{print $1}'
+}
+
+listener_units_to_stop() {
+  if [[ -n "${STATION_IDS:-}" ]]; then
+    local id
+    while IFS= read -r id; do
+      [[ -n "$id" ]] && printf 'mediahub-listener@%s.service\n' "$id"
+    done < <(selected_station_ids)
+  else
+    active_listener_units
+  fi
+}
+
+require_sudo() {
+  sudo -v
+}
+
+start_stack() {
+  require_sudo
+  sudo systemctl start "$PROXY_SERVICE" "$WEB_SERVICE" "$MONITOR_TIMER" \
+    "$PROCESSING_TIMER" "$TAGGING_TIMER" "$TOPIC_STATS_TIMER"
+
+  local failed=0 id
+  while IFS= read -r id; do
+    [[ -n "$id" ]] || continue
+    echo "Starting listener for station $id"
+    sudo systemctl start "mediahub-listener@${id}.service" || failed=1
+  done < <(selected_station_ids)
+  return "$failed"
+}
+
+stop_stack() {
+  require_sudo
+  sudo systemctl stop "$PROCESSING_TIMER" "$TAGGING_TIMER" "$TOPIC_STATS_TIMER" \
+    mediahub-processing.service mediahub-tagging.service mediahub-topic-stats.service
+  local unit
+  while IFS= read -r unit; do
+    [[ -n "$unit" ]] || continue
+    echo "Stopping $unit"
+    sudo systemctl stop "$unit"
+  done < <(listener_units_to_stop)
+  sudo systemctl stop "$PROXY_SERVICE" "$WEB_SERVICE"
+  # Keep the host-monitor timer active: it is useful precisely while the stack is down.
+}
+
+set_listener_boot_state() {
+  require_sudo
+  local operation="$1" id failed=0
+  while IFS= read -r id; do
+    [[ -n "$id" ]] || continue
+    echo "${operation^} listener for station $id at boot"
+    sudo systemctl "$operation" "mediahub-listener@${id}.service" || failed=1
+  done < <(selected_station_ids)
+  return "$failed"
+}
+
+show_status() {
+  printf '%-42s %s\n' "SERVICE" "STATE"
+  local unit state
+  for unit in "$WEB_SERVICE" "$PROXY_SERVICE" "$MONITOR_TIMER" \
+              "$PROCESSING_TIMER" "$TAGGING_TIMER" "$TOPIC_STATS_TIMER"; do
+    state="$(systemctl is-active "$unit" 2>/dev/null || true)"
+    printf '%-42s %s\n' "$unit" "${state:-unknown}"
+  done
+  local id
+  while IFS= read -r id; do
+    [[ -n "$id" ]] || continue
+    unit="mediahub-listener@${id}.service"
+    state="$(systemctl is-active "$unit" 2>/dev/null || true)"
+    printf '%-42s %s\n' "$unit" "${state:-unknown}"
+  done < <(selected_station_ids)
+}
+
+case "$ACTION" in
+  start) start_stack ;;
+  stop) stop_stack ;;
+  status) show_status ;;
+  enable) set_listener_boot_state enable ;;
+  disable) set_listener_boot_state disable ;;
+esac

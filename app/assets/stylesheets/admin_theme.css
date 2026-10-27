@@ -1,0 +1,142 @@
+/* MediaHub operating console: a restrained, high-contrast layer over ActiveAdmin. */
+body.active_admin {
+  background: #f4f7fb;
+  color: #172033;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body.active_admin #header {
+  min-height: 54px;
+  padding: 0;
+  background: linear-gradient(115deg, #111a33 0%, #192751 58%, #3730a3 130%);
+  box-shadow: 0 3px 18px rgba(15, 23, 42, .18);
+  text-shadow: none;
+}
+body.active_admin #header h1 { padding: 16px 28px 13px; font-size: 1.05rem; font-weight: 760; letter-spacing: -.03em; }
+body.active_admin #header ul.tabs > li { margin: 10px 1px; font-size: .78rem; font-weight: 650; }
+body.active_admin #header ul.tabs > li a { padding: 8px 10px; border-radius: 7px; color: #cbd5e1; }
+body.active_admin #header ul.tabs > li.current > a,
+body.active_admin #header ul.tabs > li:hover > a { background: rgba(255,255,255,.13); color: #fff; }
+body.active_admin #header #utility_nav { padding-right: 28px; color: #cbd5e1; font-size: .78rem; }
+
+body.active_admin #title_bar {
+  min-height: 82px;
+  padding: 0 28px;
+  border-bottom: 1px solid #e2e8f0;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 1px 5px rgba(15,23,42,.035);
+}
+body.active_admin #title_bar h2 { padding-top: 26px; color: #172033; font-size: 1.4rem; font-weight: 760; letter-spacing: -.045em; }
+body.active_admin #title_bar .action_items span.action_item > a,
+body.active_admin #title_bar a.button {
+  padding: 9px 13px; border: 0; border-radius: 7px; color: #fff; background: #4f46e5; box-shadow: 0 3px 8px rgba(79,70,229,.22); font-weight: 700; text-shadow: none;
+}
+body.active_admin #title_bar .action_items span.action_item > a:hover { background: #4338ca; }
+
+body.active_admin #active_admin_content,
+body.active_admin #main_content_wrapper #main_content { padding-top: 24px; }
+body.active_admin .breadcrumb { color: #94a3b8; font-size: .72rem; }
+body.active_admin a { color: #4338ca; }
+body.active_admin a:hover { color: #312e81; }
+
+body.active_admin .scopes { margin-bottom: 18px; }
+body.active_admin .scopes .scope { margin-right: 7px; padding: 0; border: 0; border-radius: 999px; background: transparent; }
+body.active_admin .scopes .scope a { display: block; padding: 7px 11px; border: 1px solid #dbe4f2; border-radius: 999px; color: #526079; background: #fff; font-size: .74rem; font-weight: 700; }
+body.active_admin .scopes .scope.selected a,
+body.active_admin .scopes .scope a:hover { border-color: #c7d2fe; color: #4338ca; background: #eef2ff; }
+
+body.active_admin table.index_table {
+  overflow: hidden; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.045);
+}
+body.active_admin table.index_table th {
+  padding: 11px 13px; border: 0; border-bottom: 1px solid #e2e8f0; background: #f8fafc; box-shadow: none; color: #64748b; font-size: .67rem; font-weight: 760; letter-spacing: .075em; text-shadow: none; text-transform: uppercase;
+}
+body.active_admin table.index_table th a { color: #64748b; }
+body.active_admin table.index_table td { padding: 12px 13px; border-bottom: 1px solid #edf1f5; color: #475569; font-size: .82rem; vertical-align: middle; }
+body.active_admin table.index_table tr.even td { background: #fbfcfe; }
+body.active_admin table.index_table tbody tr:hover td { background: #f5f7ff; }
+body.active_admin table.index_table td a { font-weight: 680; }
+body.active_admin table.index_table td.col-actions a { font-size: .75rem; }
+
+body.active_admin .status_tag { display: inline-flex; align-items: center; min-height: 20px; padding: 3px 8px 2px; border-radius: 999px; box-shadow: none; font-size: .63rem; font-weight: 780; letter-spacing: .06em; }
+body.active_admin .panel,
+body.active_admin .sidebar_section,
+body.active_admin .section { overflow: hidden; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.045); }
+body.active_admin .panel > h3,
+body.active_admin .sidebar_section > h3,
+body.active_admin .section > h3 { margin: 0; padding: 12px 15px; border: 0; border-bottom: 1px solid #e8edf3; background: #f8fafc; box-shadow: none; color: #334155; font-size: .73rem; font-weight: 780; letter-spacing: .075em; text-shadow: none; text-transform: uppercase; }
+body.active_admin .panel > div { padding: 13px 15px 15px; }
+body.active_admin .attributes_table table th { width: 175px; color: #64748b; font-size: .68rem; font-weight: 760; letter-spacing: .065em; text-shadow: none; }
+body.active_admin .attributes_table table td { color: #334155; font-size: .84rem; }
+body.active_admin .attributes_table table th,
+body.active_admin .attributes_table table td { padding: 10px 0; border-color: #edf1f5; }
+body.active_admin pre { padding: 13px; border: 1px solid #e2e8f0; border-radius: 7px; color: #cbd5e1; background: #111a33; font-size: .75rem; line-height: 1.55; white-space: pre-wrap; }
+
+body.active_admin .sidebar_section { background: #fff; }
+body.active_admin .sidebar_section form.filter_form .filter_form_field { margin-bottom: 13px; }
+body.active_admin .sidebar_section label { color: #64748b; font-size: .66rem; letter-spacing: .06em; }
+body.active_admin .sidebar_section input[type=text],
+body.active_admin .sidebar_section select { border-color: #dbe4f2; border-radius: 6px; box-shadow: none; }
+body.active_admin .sidebar_section input[type=submit] { border: 0; border-radius: 6px; background: #4f46e5; box-shadow: none; text-shadow: none; }
+
+body.active_admin form fieldset.inputs { border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.04); }
+body.active_admin form fieldset legend span { border: 0; border-bottom: 1px solid #e8edf3; background: #f8fafc; box-shadow: none; color: #334155; font-size: .73rem; letter-spacing: .07em; text-shadow: none; }
+body.active_admin form input[type=text], body.active_admin form input[type=url], body.active_admin form textarea { border-color: #dbe4f2; border-radius: 7px; box-shadow: none; }
+body.active_admin form input:focus, body.active_admin form textarea:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(99,102,241,.13); }
+
+body.active_admin .pagination { margin-top: 18px; }
+body.active_admin .pagination a, body.active_admin .pagination span { border-radius: 6px; }
+body.active_admin .download_links { color: #94a3b8; font-size: .73rem; }
+
+/* The operational dashboard reads as a compact control room, not a generic CMS. */
+body.active_admin .admin-operations .columns { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 15px; margin: 0 0 20px; }
+body.active_admin .admin-operations .columns .column { float: none; width: auto !important; min-width: 0; margin: 0; }
+body.active_admin .admin-operations .columns .panel { height: calc(100% - 2px); margin: 0; }
+body.active_admin .admin-operations .columns .panel_contents { padding: 16px 17px 18px; }
+body.active_admin .admin-operations .columns .panel_contents p { margin: 0 0 9px; color: #64748b; font-size: .82rem; }
+body.active_admin .admin-operations .columns .panel_contents .button { display: inline-block; margin-top: 5px; padding: 8px 10px; border: 1px solid #dbe4f2; border-radius: 6px; color: #4338ca; background: #eef2ff; font-size: .75rem; font-weight: 700; }
+
+@media (max-width: 900px) {
+  body.active_admin #header h1 { padding-left: 16px; }
+  body.active_admin #title_bar { padding-inline: 16px; }
+  body.active_admin .admin-operations .columns { grid-template-columns: 1fr; }
+  body.active_admin table.index_table { display: block; overflow-x: auto; }
+}
+
+/* Login: a calm, deliberate entry point for the operations console. */
+body.logged_out {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 18%, rgba(99,102,241,.38), transparent 30%),
+    radial-gradient(circle at 88% 84%, rgba(14,165,233,.19), transparent 31%),
+    linear-gradient(135deg, #0b1226, #172554 58%, #111a33);
+}
+body.logged_out::before,
+body.logged_out::after { content: ""; position: fixed; pointer-events: none; }
+body.logged_out::before { inset: 0; opacity: .18; background-image: linear-gradient(rgba(255,255,255,.11) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.11) 1px, transparent 1px); background-size: 44px 44px; mask-image: linear-gradient(135deg, #000, transparent 72%); }
+body.logged_out::after { right: -15rem; bottom: -19rem; width: 40rem; height: 40rem; border: 1px solid rgba(199,210,254,.2); border-radius: 50%; box-shadow: 0 0 0 4rem rgba(99,102,241,.045), 0 0 0 8rem rgba(99,102,241,.035); }
+/* ActiveAdmin gives #wrapper a full width. Center its child explicitly so the
+   login card stays centered on large desktop viewports. */
+body.logged_out #wrapper { display: flex; width: 100%; justify-content: center; }
+body.logged_out #content_wrapper { position: relative; z-index: 1; width: min(100% - 2rem, 27rem); margin: 0; }
+body.logged_out #content_wrapper #active_admin_content { overflow: hidden; padding: 2rem; border: 1px solid rgba(226,232,240,.82); border-radius: 1rem; background: rgba(255,255,255,.98); box-shadow: 0 26px 70px rgba(3,7,18,.35); }
+body.logged_out h2 {
+  margin: -2rem -2rem 1.7rem; padding: 1.7rem 2rem 1.35rem; border: 0; border-bottom: 1px solid #e8edf4; background: #fff; box-shadow: none; color: #172033; font-size: 1.35rem; font-weight: 760; letter-spacing: -.045em; text-shadow: none;
+}
+body.logged_out h2::before { content: "MEDIAHUB"; display: block; margin-bottom: .5rem; color: #6366f1; font-size: .66rem; font-weight: 800; letter-spacing: .13em; text-shadow: none; }
+body.logged_out #login form fieldset { padding: 0; }
+body.logged_out #login form fieldset li { padding: 0 0 1rem; }
+body.logged_out #login form fieldset li label { margin-bottom: .42rem; color: #64748b; font-size: .68rem; font-weight: 760; letter-spacing: .07em; }
+body.logged_out #login form fieldset input[type=text],
+body.logged_out #login form fieldset input[type=email],
+body.logged_out #login form fieldset input[type=password] { width: 100%; box-sizing: border-box; padding: .72rem .8rem; border: 1px solid #dbe4f2; border-radius: .55rem; background: #fbfcfe; color: #172033; font-size: .9rem; }
+body.logged_out #login form fieldset input:focus { border-color: #818cf8; background: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,.14); }
+body.logged_out #login form fieldset.buttons { margin: .25rem 0 0; }
+body.logged_out #login form input[type=submit] { width: 100%; padding: .75rem 1rem; border: 0; border-radius: .55rem; background: linear-gradient(135deg, #4f46e5, #4338ca); box-shadow: 0 8px 16px rgba(79,70,229,.24); color: #fff; font-size: .84rem; font-weight: 760; text-shadow: none; }
+body.logged_out #login form input[type=submit]:hover { background: linear-gradient(135deg, #5b54ed, #3730a3); }
+body.logged_out #login a { float: none; margin: .55rem 0 0; color: #4f46e5; font-size: .76rem; }
+body.logged_out .flash { padding: .7rem .8rem; border: 1px solid #fecaca; border-radius: .5rem; color: #b42318; background: #fef2f2; font-size: .78rem; line-height: 1.45; }
+@media (max-width: 480px) { body.logged_out #content_wrapper { width: calc(100% - 1.25rem); } body.logged_out #content_wrapper #active_admin_content { padding: 1.5rem; } body.logged_out h2 { margin: -1.5rem -1.5rem 1.4rem; padding: 1.5rem 1.5rem 1.2rem; } }

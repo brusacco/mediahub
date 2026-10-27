@@ -6,22 +6,13 @@ class VideosController < ApplicationController
     # Use relative path for video URL (works in both development and production)
     @clip_path = "/#{@clip.public_path}"
     
-    # Get timeline videos: 3 before and 3 after the current video
-    # Videos from the same station, ordered chronologically by posted_at
-    station_videos = Video.where(station_id: @clip.station_id)
-                         .order(posted_at: :asc)
-                         .to_a
-    
-    current_index = station_videos.index(@clip)
-    
-    if current_index
-      start_index = [0, current_index - 3].max
-      end_index = [station_videos.length - 1, current_index + 3].min
-      @related_videos = station_videos[start_index..end_index] || []
-      @current_index_in_related = current_index - start_index
-    else
-      @related_videos = []
-      @current_index_in_related = 0
-    end
+    # Load only the immediate broadcast context. Loading the station's full
+    # archive here made the most-used clip page progressively slower.
+    preceding = @clip.station.videos.where('posted_at < ?', @clip.posted_at)
+                     .order(posted_at: :desc).limit(3).to_a.reverse
+    following = @clip.station.videos.where('posted_at > ?', @clip.posted_at)
+                     .order(posted_at: :asc).limit(3).to_a
+
+    @related_videos = preceding + [@clip] + following
   end
 end

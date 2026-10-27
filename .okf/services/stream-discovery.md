@@ -9,9 +9,13 @@ resource: app/services/stream_url_update_service.rb
 
 # Behavior
 
-`StreamUrlUpdateService` opens `station.stream_source` in Chrome, routes the browser through the local [m3u8 capture proxy](m3u8-proxy.md), optionally clicks the configured play selector, and reads manifest URLs from `/tmp/mitm_m3u8.log`. A selected candidate becomes `station.stream_url`.
+`StreamUrlUpdateService` opens `station.stream_source` in Chrome, routes the browser through the local [m3u8 capture proxy](m3u8-proxy.md), optionally clicks the configured play selector, and reads manifest URLs from `/tmp/mitm_m3u8.log`. A selected candidate is saved separately, preflighted with FFprobe for both video and audio, and only then promoted atomically to `station.stream_url`. Selenium renewals also retain the browser-cookie header when playback is bound to that session. The promotion stores this request context, inferred token expiry when present, and the previous active source for automatic rollback after two invalid segments.
 
-Discovery is serialized with a process lock because mitmproxy writes to a shared capture file. If the browser does not emit the stream request, the service reads HLS/DASH manifest URLs declared in both the rendered DOM and the original source HTML. Dailymotion embeds are resolved through their player metadata endpoint. If those mechanisms do not return a URL, the service falls back to Chrome's headless DOM renderer through the same proxy.
+Discovery is serialized with a process lock because mitmproxy writes to a shared capture file. It first resolves HLS/DASH manifests declared in an iframe, then falls back to the browser/proxy flow when that direct configuration path is unavailable. The player page is fetched with the public source as `Referer` and a cache-busting query so an expired, cached signed URL is never reused. Browser fallback reads manifests declared in both the rendered DOM and original source HTML; Dailymotion embeds are resolved through their metadata endpoint, followed by Chrome's headless DOM renderer if needed.
+
+## GEN (`station_id=34`)
+
+GEN embeds its real Video.js player at `gentv.desdepylabs.com`; its public page contains no direct manifest. The player configuration contains a short-lived signed HLS URL and the embed host rejects direct requests without `Referer: https://www.gen.com.py/`. Do not configure `iframe` as a play-button selector: clicking the outer iframe cannot trigger the inner player. The embedded-player resolver retrieves the configuration directly with the required referer and renews the manifest without relying on that click.
 
 ## Critical model: the playlist is a temporary browser-derived credential
 

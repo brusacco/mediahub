@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'open3'
+require 'fileutils'
+require 'uri'
 
 namespace :stream do
   desc 'Listen to a single station stream'
@@ -22,6 +24,14 @@ namespace :stream do
 
     unless station.active?
       puts "Station #{station.name} (ID: #{station.id}) is not active, exiting"
+      exit 0
+    end
+
+    lock_path = Rails.root.join('tmp', 'locks', "capture-station-#{station.id}.lock")
+    FileUtils.mkdir_p(lock_path.dirname)
+    capture_lock = File.open(lock_path, File::RDWR | File::CREAT, 0o644)
+    unless capture_lock.flock(File::LOCK_EX | File::LOCK_NB)
+      puts "Station #{station.id} already has a capture owner; exiting"
       exit 0
     end
 
@@ -67,7 +77,7 @@ namespace :stream do
         end
 
         # Define the base target directory
-        base_directory = Rails.root.join('public', 'videos', station.directory, 'temp')
+        base_directory = CaptureStorageService.staging_directory(station)
         FileUtils.mkdir_p(base_directory)
 
         # A transport connection is not enough to call a channel healthy: some
@@ -75,12 +85,15 @@ namespace :stream do
         # heartbeat worker marks the station connected only after it sees a
         # complete segment of a plausible size.
         station.update(stream_status: :disconnected, last_heartbeat_at: nil)
+        capture_session = CaptureLifecycleService.start!(station, resolver: ENV.fetch('STREAM_DISCOVERY_METHOD', 'legacy'), source_url: station.stream_url)
+        CaptureLifecycleService.transition!(capture_session, 'capturing')
         station.add_log_entry("Esperando un segmento válido para confirmar conexión")
 
         # Construct the ffmpeg command optimized for audio quality (critical for transcription)
         output_pattern = base_directory.join('%Y-%m-%dT%H_%M_%S.mp4').to_s
         command = [
           'ffmpeg',
+          *ffmpeg_request_headers(station),
           '-i', station.stream_url,
           
           # Buffer settings for handling latency
@@ -90,11 +103,15 @@ namespace :stream do
           '-probesize', '10000000',
           
           # Audio codec settings - PRIORITY: High quality for transcription
+          # HLS broadcasters can emit non-monotonic audio timestamps. Rebase
+          # them before encoding so libavcodec never receives backward PTS.
+          '-af', 'aresample=async=1:first_pts=0',
           '-c:a', 'aac',
           '-b:a', '256k',           # High bitrate for better audio quality (was 128k)
           '-ar', '48000',           # Higher sample rate for better voice clarity (was 44100)
           '-ac', '2',               # Stereo audio (better for voice separation)
-          '-aac_coder', 'twoloop',  # Better AAC encoding quality
+          # Do not force AAC's two-loop search. FFmpeg's default fast coder is
+          # more resilient to live streams with discontinuities.
           
           # Video codec and quality settings (secondary priority)
           '-c:v', 'libx264',
@@ -131,12 +148,17 @@ namespace :stream do
         ]
 
         Rails.logger.info("Starting FFmpeg for station #{station.id}: #{command.join(' ')}")
-        station.add_log_entry("Iniciando FFmpeg con URL: #{station.stream_url}")
+        station.add_log_entry("Iniciando FFmpeg con URL: #{station.redacted_stream_url}")
 
         # Track last file modification time for heartbeat
+        connection_started_at = Time.current
         last_file_time = nil
         consecutive_invalid_segments = 0
         heartbeat_thread = nil
+        disconnection_detected = false
+        termination_reason = nil
+        ffmpeg_stderr_tail = []
+        ffmpeg_stderr_mutex = Mutex.new
 
         # Use popen3 to read stderr in real-time
         Open3.popen3(*command) do |stdin, _stdout, stderr, wait_thr|
@@ -157,17 +179,29 @@ namespace :stream do
 
               if completed_file && File.exist?(completed_file)
                 file_time = File.mtime(completed_file)
-                validation = StreamSegmentValidationService.call(completed_file)
+
+                # A listener restart can leave completed files from the prior
+                # process in temp/. They must not make a new FFmpeg process
+                # appear healthy or reset its retry backoff.
+                next if file_time < connection_started_at
+
+                ingestion_record = IngestionRecord.track_capture!(station, completed_file)
+                validation = StreamSegmentValidationService.call(completed_file, station: station)
 
                 unless validation.success?
                   consecutive_invalid_segments += 1
                   warning_msg = "Segmento inválido detectado: #{validation.error}"
                   Rails.logger.warn("Invalid segment for station #{station.id}: #{warning_msg}")
+                  ingestion_record.fail!("Capture validation failed: #{validation.error}")
+                  CaptureLifecycleService.transition!(capture_session, 'invalid_content', reason: validation.error)
                   FileUtils.rm_f(completed_file)
 
                   if consecutive_invalid_segments >= 2
                     station.add_log_entry(warning_msg, level: :error)
+                    rollback_promoted_source(station, capture_session, warning_msg)
                     update_station_from_worker.call(stream_status: Station.stream_statuses[:disconnected], last_heartbeat_at: nil)
+                    disconnection_detected = true
+                    termination_reason = warning_msg
                     Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
                     break
                   end
@@ -175,12 +209,14 @@ namespace :stream do
                 end
 
                 consecutive_invalid_segments = 0
+                ingestion_record.mark_validated! if ingestion_record.captured? || ingestion_record.failed?
                 if last_file_time.nil? || file_time > last_file_time
-                  update_station_from_worker.call(
-                    stream_status: Station.stream_statuses[:connected],
-                    last_heartbeat_at: Time.current
-                  )
+                  CaptureLifecycleService.valid_segment!(capture_session, path: completed_file, validation: validation.data || {})
                   last_file_time = file_time
+                  if retry_count.positive?
+                    station.add_log_entry("Conexión estabilizada; reiniciando contador de reintentos")
+                    retry_count = 0
+                  end
                   Rails.logger.debug("Validated heartbeat for station #{station.id} from #{File.basename(completed_file)}")
                 end
 
@@ -189,18 +225,33 @@ namespace :stream do
                   warning_msg = "No se generó nuevo archivo en 3 minutos, posible desconexión"
                   Rails.logger.warn("No new file generated for station #{station.id} in 3 minutes, may be disconnected")
                   station.add_log_entry(warning_msg, level: :warn)
+                  update_station_from_worker.call(
+                    stream_status: Station.stream_statuses[:disconnected],
+                    last_heartbeat_at: nil
+                  )
+                  disconnection_detected = true
+                  termination_reason = warning_msg
+                  # FFmpeg can keep its transport connection open while no
+                  # usable segments are produced. Stop it so the outer loop
+                  # refreshes the manifest and reconnects instead of leaving
+                  # a stale channel marked as connected.
+                  Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
+                  break
                 end
               end
             end
           end
 
           # Monitor stderr for errors in real-time
-          disconnection_detected = false
           stderr_thread = Thread.new do
             stderr.each_line do |line|
               break if shutdown
               
-              line = line.chomp
+              line = sanitize_ffmpeg_diagnostic(line.chomp)
+              ffmpeg_stderr_mutex.synchronize do
+                ffmpeg_stderr_tail << line
+                ffmpeg_stderr_tail.shift while ffmpeg_stderr_tail.size > 20
+              end
               Rails.logger.debug("FFmpeg[#{station.id}]: #{line}")
 
               # Check for disconnection patterns
@@ -209,6 +260,7 @@ namespace :stream do
                 Rails.logger.error("Disconnection detected for station #{station.id}: #{line}")
                 station.add_log_entry(error_msg, level: :error)
                 disconnection_detected = true
+                termination_reason = error_msg
                 update_station_from_worker.call(stream_status: Station.stream_statuses[:disconnected], last_heartbeat_at: nil)
                 Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
                 break
@@ -220,6 +272,7 @@ namespace :stream do
                 Rails.logger.warn("Stream ended for station #{station.id}: #{line}")
                 station.add_log_entry(warning_msg, level: :warn)
                 disconnection_detected = true
+                termination_reason = warning_msg
                 update_station_from_worker.call(stream_status: Station.stream_statuses[:disconnected])
                 Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
                 break
@@ -233,18 +286,33 @@ namespace :stream do
           # Clean up threads
           heartbeat_thread&.kill
           stderr_thread&.kill
+          diagnostic_lines = ffmpeg_stderr_mutex.synchronize { ffmpeg_stderr_tail.dup }
+          diagnostic = ffmpeg_diagnostic_summary(diagnostic_lines)
 
           # Log FFmpeg exit status
-          if exit_status.success?
+          if exit_status.signaled?
+            signal = exit_status.termsig
+            message = "FFmpeg terminó por señal #{signal}#{termination_reason ? ": #{termination_reason}" : ''}"
+            termination_reason ||= "FFmpeg detenido por señal #{signal}: #{diagnostic || 'sin detalle adicional'}"
+            station.add_log_entry(message, level: disconnection_detected ? :warn : :error)
+            Rails.logger.warn("FFmpeg for station #{station.id} received signal #{signal}: #{termination_reason}")
+          elsif exit_status.success?
             station.add_log_entry("FFmpeg terminó exitosamente (exit status: #{exit_status.exitstatus})")
           elsif disconnection_detected
             station.add_log_entry("FFmpeg terminó por desconexión detectada (exit status: #{exit_status.exitstatus})", level: :warn)
           else
-            error_msg = "FFmpeg terminó inesperadamente con código de salida #{exit_status.exitstatus}"
-            Rails.logger.error("FFmpeg exited with status #{exit_status.exitstatus} for station #{station.id}")
+            exit_code = exit_status.exitstatus || 'no informado'
+            error_msg = "FFmpeg terminó inesperadamente (código #{exit_code}): #{diagnostic || 'FFmpeg no entregó detalle en stderr'}"
+            termination_reason = error_msg
+            Rails.logger.error("FFmpeg exited with status #{exit_code} for station #{station.id}: #{diagnostic}")
             station.add_log_entry(error_msg, level: :error)
             station.update(stream_status: :disconnected, last_heartbeat_at: nil)
           end
+          CaptureLifecycleService.finish!(capture_session, state: shutdown ? 'completed' : 'failed',
+                                          reason: termination_reason || (disconnection_detected ? 'FFmpeg disconnection' : nil),
+                                          exit_code: exit_status.exitstatus,
+                                          metadata: { ffmpeg_diagnostic: diagnostic,
+                                                      ffmpeg_stderr_tail: diagnostic_lines.last(12) })
         end
 
         # If we get here, FFmpeg has stopped
@@ -258,6 +326,7 @@ namespace :stream do
           Rails.logger.info("Attempting to update stream URL for station #{station.id}")
           station.add_log_entry("Intentando actualizar stream URL desde fuente")
           begin
+            CaptureLifecycleService.transition!(capture_session, 'renewing') if capture_session
             Rake::Task['stream:update_stream_url'].reenable
             Rake::Task['stream:update_stream_url'].invoke(station.id)
             station.reload
@@ -300,7 +369,53 @@ namespace :stream do
       end
     end
 
+    capture_lock.flock(File::LOCK_UN)
+    capture_lock.close
+
     puts "Exiting stream listener for station #{station.name} (ID: #{station.id})"
   end
+end
+
+def ffmpeg_request_headers(station)
+  headers = station.stream_headers.to_h
+  options = []
+  options += ['-referer', headers['Referer']] if headers['Referer'].present?
+  options += ['-user_agent', headers['User-Agent']] if headers['User-Agent'].present?
+  options += ['-headers', "Cookie: #{headers['Cookie']}\r\n"] if headers['Cookie'].present?
+  options
+end
+
+def rollback_promoted_source(station, capture_session, reason)
+  return if station.stream_previous_url.blank?
+
+  station.with_lock do
+    station.update!(stream_url: station.stream_previous_url,
+                    stream_headers: station.stream_previous_headers,
+                    stream_previous_url: nil, stream_previous_headers: nil)
+  end
+  CaptureLifecycleService.event!(station, capture_session, 'source_rolled_back', reason: reason)
+  station.add_log_entry('La nueva fuente fue revertida después de dos segmentos inválidos', level: :warn)
+rescue StandardError => e
+  Rails.logger.error("Could not roll back source for station #{station.id}: #{e.message}")
+end
+
+# Persist a small, redacted FFmpeg tail. Stream URLs and request credentials
+# must not reappear in the admin after the resolver has refreshed a source.
+def sanitize_ffmpeg_diagnostic(line)
+  line.to_s
+      .gsub(%r{https?://[^\s'\"]+}) do |url|
+        uri = URI.parse(url)
+        "#{uri.scheme}://#{uri.host}#{uri.path}?[token oculto]"
+      rescue URI::InvalidURIError
+        '[URL no legible]'
+      end
+      .gsub(/(cookie|authorization):\s*[^\s]+/i, '\\1: [oculto]')
+end
+
+def ffmpeg_diagnostic_summary(lines)
+  candidates = lines.reverse.find do |line|
+    line.match?(%r{error|failed|invalid|unable|timed out|refused|not found|forbidden|denied|end of file|i/o}i)
+  end
+  (candidates || lines.last).to_s.strip.presence
 end
 

@@ -72,6 +72,12 @@ class StreamUrlUpdateService < ApplicationService
     # Clear mitmproxy log before starting
     clear_mitmproxy_log
 
+    # A configuration-only embedded player can publish the fresh manifest
+    # without a browser navigation or a play gesture. Resolve that path first:
+    # it avoids Chrome startup plus the fixed capture wait on every renewal.
+    embedded_manifest_urls = manifest_urls_from_embedded_players
+    return promote_manifest_urls(embedded_manifest_urls) if embedded_manifest_urls.any?
+
     # Clean up any existing Chrome processes and old user data directories before starting
     cleanup_old_chrome_processes
 
@@ -93,6 +99,7 @@ class StreamUrlUpdateService < ApplicationService
       
       # Wait for page to load and allow time for stream URLs to be captured
       wait_for_page_load(driver)
+      @browser_request_headers = request_headers_from(driver)
       
       # Click play button if configured (some players require explicit click)
       if @station.play_button_selector.present?
@@ -156,6 +163,15 @@ class StreamUrlUpdateService < ApplicationService
         m3u8_urls = manifest_urls_from_source
       end
 
+      # Several broadcasters expose the player as a cross-origin iframe. Its
+      # manifest is consequently absent from the parent DOM and source HTML;
+      # clicking the iframe element itself also does not produce a play event
+      # inside the embedded player. Read the declared player configuration
+      # with the parent page as Referer instead.
+      if m3u8_urls.empty?
+        m3u8_urls = manifest_urls_from_embedded_players
+      end
+
       # Trece is embedded through Dailymotion. Its player gets the temporary
       # HLS URL from Dailymotion's metadata endpoint rather than directly
       # loading it on the broadcaster's page.
@@ -173,13 +189,7 @@ class StreamUrlUpdateService < ApplicationService
       end
       
       if m3u8_urls.any?
-        # Select the best URL (longest/most complete, or matches reference pattern)
-        best_url = select_best_url(m3u8_urls)
-        
-        @station.update!(stream_url: best_url)
-        puts "✅ Successfully updated stream URL: #{best_url}"
-        Rails.logger.info("Updated stream URL for station #{@station.id}: #{best_url}")
-        handle_success(best_url)
+        promote_manifest_urls(m3u8_urls)
       else
         puts "❌ No .m3u8 URLs found in mitmproxy log"
         Rails.logger.warn("No .m3u8 URLs found for station #{@station.id}")
@@ -352,6 +362,57 @@ class StreamUrlUpdateService < ApplicationService
     []
   end
 
+  def manifest_urls_from_embedded_players
+    iframe_urls = source_page_body.scan(/<iframe\b[^>]*\bsrc=["']([^"']+)["']/i).flatten.filter_map do |src|
+      URI.join(@station.stream_source, src).to_s
+    rescue URI::InvalidURIError
+      nil
+    end.uniq
+
+    urls = iframe_urls.flat_map do |iframe_url|
+      extract_manifest_urls(embedded_player_body(iframe_url))
+    end.uniq
+    Rails.logger.info("Found #{urls.length} manifest URL(s) in embedded player source for station #{@station.id}")
+    urls
+  rescue StandardError => e
+    Rails.logger.debug("Could not read manifest URLs from embedded player: #{e.message}")
+    []
+  end
+
+  def promote_manifest_urls(urls)
+    best_url = select_best_url(urls)
+    result = StreamSourcePromotionService.call(
+      @station, best_url, resolver: 'legacy',
+      headers: request_headers
+    )
+    return result unless result.success?
+
+    puts "✅ Successfully updated stream URL: #{redacted_url(best_url)}"
+    Rails.logger.info("Updated stream URL for station #{@station.id}: #{redacted_url(best_url)}")
+    handle_success(best_url)
+  end
+
+  # A signed manifest may be bound to the browser session that obtained it.
+  # Persist only the cookie header needed by FFmpeg, never the raw URL in logs.
+  def request_headers_from(driver)
+    cookies = driver.manage.all_cookies.map { |cookie| "#{cookie[:name]}=#{cookie[:value]}" }.join('; ')
+    request_headers.merge('Cookie' => cookies.presence).compact
+  rescue StandardError => e
+    Rails.logger.debug("Could not read browser cookies for station #{@station.id}: #{e.message}")
+    request_headers
+  end
+
+  def request_headers
+    (@browser_request_headers || { 'Referer' => @station.stream_source, 'User-Agent' => USER_AGENT }).compact
+  end
+
+  def redacted_url(url)
+    uri = URI.parse(url)
+    "#{uri.scheme}://#{uri.host}#{uri.path}"
+  rescue URI::InvalidURIError
+    '[unparseable manifest URL]'
+  end
+
   def dailymotion_manifest_urls(driver)
     # The embedded player can close Selenium's window. The original source is
     # sufficient to identify Dailymotion, so do not let an unavailable browser
@@ -398,13 +459,32 @@ class StreamUrlUpdateService < ApplicationService
   def source_page_body
     return @source_page_body if defined?(@source_page_body)
 
-    stdout, stderr, status = Open3.capture3(
-      'curl', '--fail', '--location', '--silent', '--show-error', '--max-time', '30',
-      '--user-agent', USER_AGENT, @station.stream_source
-    )
-    raise "Could not fetch station source: #{stderr}" unless status.success?
+    @source_page_body = fetch_page_body(@station.stream_source)
+  end
 
-    @source_page_body = stdout
+  def embedded_player_body(url)
+    # Player pages commonly cache the signed manifest for their full cache
+    # lifetime. A cache-busting query makes each renewal retrieve the current
+    # player configuration rather than a nearly-expired page.
+    uri = URI.parse(url)
+    params = URI.decode_www_form(uri.query.to_s)
+    params << ['mediahub_refresh', Time.now.to_i.to_s]
+    uri.query = URI.encode_www_form(params)
+    fetch_page_body(uri.to_s, referer: @station.stream_source)
+  end
+
+  def fetch_page_body(url, referer: nil)
+    command = [
+      'curl', '--fail', '--location', '--silent', '--show-error', '--max-time', '30',
+      '--user-agent', USER_AGENT
+    ]
+    command.concat(['--referer', referer]) if referer.present?
+    command << url
+
+    stdout, stderr, status = Open3.capture3(*command)
+    raise "Could not fetch source: #{stderr}" unless status.success?
+
+    stdout
   end
 
   def configure_timeouts(driver)

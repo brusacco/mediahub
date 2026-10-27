@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-desc 'Run import_videos, generate_transcription, and remove_fail_videos sequentially, ensuring single execution'
+desc 'Run import_videos, generate_transcription, and mark failed videos sequentially, ensuring single execution'
 task process_videos: :environment do
   lock_file = Rails.root.join('tmp', 'process_videos.lock')
 
@@ -54,8 +54,8 @@ task process_videos: :environment do
       Rails.logger.error "Error en generate_transcription: #{e.message}"
     end
 
-    # Ejecutar tercer task
-    puts 'Se va a ejecutar el tercer rake: remove_fail_videos'
+    # Ejecutar tercer task: preserva los archivos y marca fallos para revisión.
+    puts 'Se va a ejecutar el tercer rake: remove_fail_videos (marcar para revisión)'
     begin
       Rake::Task['remove_fail_videos'].invoke
       puts 'Terminó el tercer rake: remove_fail_videos'

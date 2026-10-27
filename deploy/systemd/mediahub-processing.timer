@@ -1,0 +1,15 @@
+[Unit]
+Description=Schedule MediaHub ingest and transcription batches
+
+[Timer]
+OnBootSec=2min
+# Covers a timer restart after the last batch already finished. Thereafter the
+# inactive-unit trigger spaces runs by three minutes after each completed batch.
+OnActiveSec=3min
+OnUnitInactiveSec=3min
+Persistent=true
+AccuracySec=15s
+Unit=mediahub-processing.service
+
+[Install]
+WantedBy=timers.target
