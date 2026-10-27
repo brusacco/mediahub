@@ -14,7 +14,7 @@ The incident evidence collected on 2026-10-27 showed FFmpeg core dumps in `libav
 
 # Mitigation deployed
 
-The listener now applies HLS input/protocol options before `-i`, so generation of missing timestamps, corrupt-packet discard, reconnect behavior and read timeout apply to the source rather than the output. It also normalizes input audio timestamps before AAC encoding:
+The listener now applies HLS input/protocol options before `-i`, so generation of missing timestamps, corrupt-packet discard, reconnect behavior and read timeout apply to the source rather than the output. A `Will reconnect … error=End of file` message from FFmpeg is a normal HLS-recovery event, not a terminal source failure; the listener must let FFmpeg retry it. It also normalizes input audio timestamps before AAC encoding:
 
 ```text
 -af aresample=async=1:first_pts=0

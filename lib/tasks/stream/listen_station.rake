@@ -270,6 +270,17 @@ namespace :stream do
 
               # Check for end of stream
               if line.match?(%r{End of file|Input/output error|Streaming ended}i)
+                # `-reconnect_at_eof` is an input option. A live HLS playlist
+                # can legitimately emit "Will reconnect … error=End of file"
+                # between playlist windows. Let FFmpeg perform that recovery;
+                # terminating it here turns every normal reconnect into a
+                # fleet-wide disconnect.
+                if line.match?(/Will reconnect/i)
+                  Rails.logger.info("FFmpeg reconnecting station #{station.id}: #{line}")
+                  station.add_log_entry("FFmpeg reconectando fuente: #{line}", level: :info)
+                  next
+                end
+
                 warning_msg = "Stream finalizado: #{line}"
                 Rails.logger.warn("Stream ended for station #{station.id}: #{line}")
                 station.add_log_entry(warning_msg, level: :warn)
