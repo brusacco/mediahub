@@ -370,13 +370,31 @@ class StreamUrlUpdateService < ApplicationService
     end.uniq
 
     urls = iframe_urls.flat_map do |iframe_url|
-      extract_manifest_urls(embedded_player_body(iframe_url))
+      player_body = embedded_player_body(iframe_url)
+      extract_manifest_urls(player_body) + manifest_urls_from_player_config(iframe_url, player_body)
     end.uniq
     Rails.logger.info("Found #{urls.length} manifest URL(s) in embedded player source for station #{@station.id}")
     urls
   rescue StandardError => e
     Rails.logger.debug("Could not read manifest URLs from embedded player: #{e.message}")
     []
+  end
+
+  # Datarhei Restreamer embeds load the live manifest indirectly through a
+  # channel-specific `config.js`. The iframe HTML contains no literal .m3u8,
+  # so normal DOM/source scanning cannot discover it. Resolve the declared
+  # config script relative to the iframe and promote its `source` value.
+  def manifest_urls_from_player_config(iframe_url, player_body)
+    config_urls = player_body.scan(/<script\b[^>]*\bsrc=["']([^"']*config\.js[^"']*)["']/i).flatten
+
+    config_urls.filter_map do |config_url|
+      resolved_config_url = URI.join(iframe_url, config_url).to_s
+      config_body = fetch_page_body(resolved_config_url, referer: iframe_url)
+      source = config_body[/["']source["']\s*:\s*["']([^"']+\.(?:m3u8|mpd)(?:\?[^"']*)?)["']/i, 1]
+      URI.join(iframe_url, source).to_s if source.present?
+    rescue URI::InvalidURIError
+      nil
+    end
   end
 
   def promote_manifest_urls(urls)
