@@ -64,6 +64,7 @@ Implement these before calling the system production-ready.
 
 3. **Atomic source renewal**
    - Model a candidate source separately from the active source.
+   - Treat every signed HLS/DASH manifest as a temporary browser-derived lease, not as permanent channel configuration. Preserve a durable source page separately from the temporary URL.
    - Preflight each candidate with FFprobe/FFmpeg for video, audio, playlist progress and content validation.
    - Promote a candidate atomically only after it passes; roll back automatically if the first two segments fail.
    - Store required `Referer`, `User-Agent`, cookies and expiry time with the capture session. Pass them explicitly to FFmpeg. Do not rely on an HLS URL alone when the provider requires browser context.
@@ -141,5 +142,6 @@ Implement these before calling the system production-ready.
 
 - Keep `STREAM_DISCOVERY_METHOD=legacy` for all listener services.
 - Use Ferrum only through a manually invoked diagnostic run and record the result in the station log.
+- Regard every discovered playlist as short-lived session output. The stable recovery input is the channel's public source page plus its resolver configuration, never the previous signed playlist alone.
 - Enable new channels only after one validated segment and a successful renewal drill.
 - Do not run the backlog-wide `process_videos` or transcription tasks until their queues, rejection handling and capacity limits are in place.

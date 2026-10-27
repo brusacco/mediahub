@@ -13,6 +13,38 @@ resource: app/services/stream_url_update_service.rb
 
 Discovery is serialized with a process lock because mitmproxy writes to a shared capture file. If the browser does not emit the stream request, the service reads HLS/DASH manifest URLs declared in both the rendered DOM and the original source HTML. Dailymotion embeds are resolved through their player metadata endpoint. If those mechanisms do not return a URL, the service falls back to Chrome's headless DOM renderer through the same proxy.
 
+## Critical model: the playlist is a temporary browser-derived credential
+
+For many broadcasters, `station.stream_url` is **not** a durable source address. The public source page creates a browser session, the player receives a real interaction such as Play, and only then the broadcaster returns an HLS/DASH manifest with a short-lived signed token. In some cases the manifest is usable only with the browser's `Referer`, `User-Agent`, cookies or other request headers.
+
+The actual flow is:
+
+```text
+public channel page
+  -> browser session / consent / cookies
+  -> player or iframe loads
+  -> Play gesture
+  -> temporary manifest + signed token
+  -> capture while its lease is valid
+  -> renewal before expiry or after a validated capture failure
+```
+
+Agents must never treat a discovered `.m3u8` or `.mpd` URL as a permanent channel configuration, nor infer that an HTTP-successful playlist carries valid broadcast content. A URL can remain syntactically playable while showing an expired-session slate.
+
+### Requirements for every resolver
+
+- Keep a stable `stream_source` page separate from the temporary manifest.
+- Capture and persist the discovery time, resolver method, expiry when available, and a redacted URL fingerprint; never expose signed query tokens in logs or documentation.
+- Capture the minimum request context needed by FFmpeg: `Referer`, `User-Agent`, cookies and relevant headers.
+- Drive configured Play selectors with a real browser interaction; support iframe and consent flows when a channel requires them.
+- Validate a candidate by checking video, audio, playlist progress and content before promoting it for capture.
+- Renew proactively when expiry is known, and reactively on HTTP authorization failures, no playlist progress, FFmpeg failure, or content-validator rejection.
+- Promote a candidate atomically and retain the former active source until the first valid segments confirm the replacement.
+
+### Tool boundaries
+
+Selenium/mitmproxy and Ferrum are browser/session resolvers. Streamlink may provide a resolver for supported providers. MediaMTX, SRS and Restreamer are downstream relays, recorders or monitors: they cannot obtain a browser-only manifest by themselves. Use those tools only after a source resolver has produced and validated a usable temporary stream.
+
 ## Ferrum: experimental analysis path
 
 Ferrum is an independent CDP browser path reserved for manual analysis and trials. It does not use ChromeDriver or mitmproxy: it plays the source page and reads the browser's network traffic for `.m3u8` or `.mpd` requests. When a station has `play_button_selector`, Ferrum waits for that selector and sends a native Chrome CDP click, allowing players that require a trusted user gesture to start.
