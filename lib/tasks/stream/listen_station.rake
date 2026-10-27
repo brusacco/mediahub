@@ -198,15 +198,18 @@ namespace :stream do
               unless completed_file && File.exist?(completed_file)
                 if Time.current - connection_started_at > 180
                   warning_msg = 'No se generó ningún segmento válido en 3 minutos, posible conexión estancada'
+                  # Terminate the producer before writing operational state.
+                  # A database call must never prevent recovery of a stalled
+                  # capture if it is temporarily blocked.
+                  Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
+                  disconnection_detected = true
+                  termination_reason = warning_msg
                   Rails.logger.warn("No initial segment generated for station #{station.id} in 3 minutes")
                   station.add_log_entry(warning_msg, level: :warn)
                   update_station_from_worker.call(
                     stream_status: Station.stream_statuses[:disconnected],
                     last_heartbeat_at: nil
                   )
-                  disconnection_detected = true
-                  termination_reason = warning_msg
-                  Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
                   break
                 end
 
