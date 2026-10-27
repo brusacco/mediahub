@@ -179,10 +179,16 @@ namespace :stream do
               break if shutdown
 
               segment_files = Dir.glob(base_directory.join('*.mp4').to_s).sort_by { |file| File.mtime(file) }
+              # Files from a listener that ended earlier can remain in temp/.
+              # They are not evidence that this FFmpeg process ever received
+              # media, and must not suppress its initial-segment timeout.
+              current_segment_files = segment_files.select do |file|
+                File.mtime(file) >= connection_started_at
+              end
               # The newest file can still be being written. Validate the last
               # completed segment instead, so a partial file cannot create a
               # false heartbeat.
-              completed_file = segment_files[-2]
+              completed_file = current_segment_files[-2]
 
               # A process can keep an HLS connection open without ever
               # delivering its first completed segment. The previous stale
@@ -209,11 +215,6 @@ namespace :stream do
 
               if completed_file && File.exist?(completed_file)
                 file_time = File.mtime(completed_file)
-
-                # A listener restart can leave completed files from the prior
-                # process in temp/. They must not make a new FFmpeg process
-                # appear healthy or reset its retry backoff.
-                next if file_time < connection_started_at
 
                 ingestion_record = IngestionRecord.track_capture!(station, completed_file)
                 validation = StreamSegmentValidationService.call(completed_file, station: station)
