@@ -182,6 +182,29 @@ namespace :stream do
               # false heartbeat.
               completed_file = segment_files[-2]
 
+              # A process can keep an HLS connection open without ever
+              # delivering its first completed segment. The previous stale
+              # segment check only ran after a file existed, leaving this
+              # state stuck in `capturing` forever. Treat it as a failed
+              # initial heartbeat and let the outer loop renew the source.
+              unless completed_file && File.exist?(completed_file)
+                if Time.current - connection_started_at > 180
+                  warning_msg = 'No se generó ningún segmento válido en 3 minutos, posible conexión estancada'
+                  Rails.logger.warn("No initial segment generated for station #{station.id} in 3 minutes")
+                  station.add_log_entry(warning_msg, level: :warn)
+                  update_station_from_worker.call(
+                    stream_status: Station.stream_statuses[:disconnected],
+                    last_heartbeat_at: nil
+                  )
+                  disconnection_detected = true
+                  termination_reason = warning_msg
+                  Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
+                  break
+                end
+
+                next
+              end
+
               if completed_file && File.exist?(completed_file)
                 file_time = File.mtime(completed_file)
 
