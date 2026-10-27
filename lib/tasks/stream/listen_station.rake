@@ -109,6 +109,11 @@ namespace :stream do
           '-reconnect_at_eof', '1',
           '-reconnect_streamed', '1',
           '-reconnect_delay_max', '10',
+          # A live HLS server can keep HTTP open while returning the same
+          # media sequence forever. Bound that silent-stall state so FFmpeg
+          # exits and the listener renews its source instead of waiting
+          # indefinitely for packets that will never arrive.
+          '-m3u8_hold_counters', '90',
           *ffmpeg_request_headers(station),
           '-i', station.stream_url,
 

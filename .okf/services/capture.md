@@ -13,6 +13,8 @@ resource: lib/tasks/stream/listen_station.rake
 
 When FFmpeg exits, the listener records the session outcome, marks the station disconnected and attempts [stream URL discovery](stream-discovery.md). A listener that produces no completed segment at all within three minutes is also treated as a stale connection: it is stopped and follows the same renewal path instead of remaining indefinitely in `capturing`. Two consecutive invalid segments stop FFmpeg, revert a newly promoted source when available, delete those temporary clips, and trigger the same recovery path. [Scheduled work](scheduling.md) imports staging files into dated public archives and creates `Video` records. Import repeats the same validation as a second safeguard. Legacy temporary files under `public/videos/<station>/temp` are imported during migration but new capture never writes there.
 
+For HLS inputs, FFmpeg also limits consecutive playlist reloads with no new media sequence. This protects against providers that keep an HTTP connection open while serving a frozen playlist: FFmpeg exits, and the normal source-renewal path takes over.
+
 ## Audit trail
 
 `CaptureSession` and `CaptureEvent` record every capture owner, source candidate/promotion/rejection, state transition, valid segment, FFmpeg exit and source rollback. Events store a URL fingerprint and resolver metadata rather than raw signed URLs. Application logs emit the same fields as JSON.
