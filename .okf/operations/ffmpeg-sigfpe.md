@@ -73,4 +73,6 @@ The first count should cover active FFmpeg captures; the second should be `0`.
 
 Ubuntu Jammy currently provides FFmpeg `4.4.2` from its standard repository. Do not replace it ad hoc on a live capture fleet. A newer managed build can be evaluated on one canary listener with a documented rollback, then compared for valid-segment continuity, core dumps, CPU use and recovery behavior for at least 24–72 hours.
 
+The supported canary pattern is a side-by-side build under `/opt/mediahub/vendor/ffmpeg/<version>/bin/ffmpeg` and a systemd drop-in for exactly one `mediahub-listener@<station-id>.service` that sets `FFMPEG_BIN` to that absolute path. The listener defaults to the system `ffmpeg` when this variable is absent. Rollback is removing the drop-in, reloading systemd and restarting only that listener; `/usr/bin/ffmpeg` is never overwritten.
+
 Open follow-up work is tracked in [production open work](../decisions/open-work.md): validate the mitigation over time, triage the independent Ruby listener crashes, control core-dump retention, and execute a canary plan for a newer FFmpeg build.

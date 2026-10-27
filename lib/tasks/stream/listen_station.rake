@@ -92,7 +92,10 @@ namespace :stream do
         # Construct the ffmpeg command optimized for audio quality (critical for transcription)
         output_pattern = base_directory.join('%Y-%m-%dT%H_%M_%S.mp4').to_s
         command = [
-          'ffmpeg',
+          # Keep the system FFmpeg as the default. A listener can opt into a
+          # side-by-side canary build with FFMPEG_BIN=/absolute/path/ffmpeg
+          # without replacing /usr/bin/ffmpeg for Rails or other channels.
+          ENV.fetch('FFMPEG_BIN', 'ffmpeg'),
           # These are input/protocol options and must be placed before `-i`.
           # Putting them after the input makes FFmpeg apply them to the output
           # (or ignore them), leaving HLS discontinuities and reconnects
