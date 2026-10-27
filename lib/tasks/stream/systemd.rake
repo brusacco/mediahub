@@ -42,7 +42,10 @@ namespace :stream do
         WorkingDirectory=#{WORKING_DIR}
         Environment="RAILS_ENV=#{RAILS_ENV}"
         ExecStart=/usr/bin/env bundle exec rake stream:listen_station[#{station.id}]
-        Restart=always
+        # The listener exits successfully after its bounded renewal attempts
+        # are exhausted. Do not turn a permanently invalid public source into
+        # an endless browser/FFmpeg loop; restart only actual process failures.
+        Restart=on-failure
         RestartSec=5
         StandardOutput=journal
         StandardError=journal
@@ -96,7 +99,7 @@ namespace :stream do
         WorkingDirectory=#{WORKING_DIR}
         Environment="RAILS_ENV=#{RAILS_ENV}"
         ExecStart=/usr/bin/env bundle exec rake stream:listen_station[#{station.id}]
-        Restart=always
+        Restart=on-failure
         RestartSec=5
         StandardOutput=journal
         StandardError=journal

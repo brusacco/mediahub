@@ -25,7 +25,7 @@ NPY can serve HTTP-successful HLS video that only displays the blue message “S
 
 # Runtime supervision
 
-`mediahub-listener@<station-id>.service` runs each listener under systemd, initializes RVM before Bundler, and restarts after a failure. Boot activation is intentional and is controlled per channel through `mediahub enable` / `mediahub disable`; it is not implied by a one-time start.
+`mediahub-listener@<station-id>.service` runs each listener under systemd, initializes RVM before Bundler, and restarts after an unexpected process failure. A listener that exhausts its bounded source-renewal attempts exits cleanly and remains stopped, avoiding an endless Chrome/FFmpeg loop against an unavailable broadcaster. Boot activation is intentional and is controlled per channel through `mediahub enable` / `mediahub disable`; it is not implied by a one-time start.
 
 After a listener produces its first newly written, validated segment, it resets its exponential retry counter. Files left in `temp/` by an earlier listener process never count as a new heartbeat, preventing a stale segment from reporting a false connection or shortening a needed backoff.
 
