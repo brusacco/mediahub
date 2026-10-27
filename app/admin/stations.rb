@@ -82,6 +82,7 @@ ActiveAdmin.register Station do
       if session
         attributes_table_for session do
           row :state; row :resolver; row :started_at; row :last_valid_segment_at; row :failure_reason; row :ffmpeg_exit_code
+          row('Señal FFmpeg') { session.metadata.to_h['ffmpeg_signal'].presence || '—' }
           row('Diagnóstico FFmpeg') { session.metadata.to_h['ffmpeg_diagnostic'].presence || '—' }
           row('Últimas líneas FFmpeg') do
             lines = Array(session.metadata.to_h['ffmpeg_stderr_tail']).last(12)

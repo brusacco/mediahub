@@ -14,15 +14,15 @@ The incident evidence collected on 2026-10-27 showed FFmpeg core dumps in `libav
 
 # Mitigation deployed
 
-The listener now normalizes input audio timestamps before AAC encoding:
+The listener now applies HLS input/protocol options before `-i`, so generation of missing timestamps, corrupt-packet discard, reconnect behavior and read timeout apply to the source rather than the output. It also normalizes input audio timestamps before AAC encoding:
 
 ```text
 -af aresample=async=1:first_pts=0
 ```
 
-It no longer forces `-aac_coder twoloop`; FFmpeg uses its fast native AAC default. This specifically reduces risk from discontinuous HLS audio timestamps. It is a mitigation, not a guarantee that a malformed upstream stream cannot crash an older FFmpeg build.
+It explicitly uses `-aac_coder fast` and no longer forces `twoloop`. This specifically reduces risk from discontinuous HLS audio timestamps. It is a mitigation, not a guarantee that a malformed upstream stream cannot crash an older FFmpeg build.
 
-For each FFmpeg exit, MediaHub retains a bounded, redacted stderr tail in the capture-session metadata and shows a diagnostic summary in the station administration view. Signed URLs, cookies, and tokens must never be copied into tickets or documentation.
+For each FFmpeg exit, MediaHub retains a bounded, redacted stderr tail and signal number in the capture-session metadata and shows a diagnostic summary in the station administration view. Signed URLs, cookies, and tokens must never be copied into tickets or documentation.
 
 # First response
 

@@ -93,25 +93,34 @@ namespace :stream do
         output_pattern = base_directory.join('%Y-%m-%dT%H_%M_%S.mp4').to_s
         command = [
           'ffmpeg',
-          *ffmpeg_request_headers(station),
-          '-i', station.stream_url,
-          
-          # Buffer settings for handling latency
+          # These are input/protocol options and must be placed before `-i`.
+          # Putting them after the input makes FFmpeg apply them to the output
+          # (or ignore them), leaving HLS discontinuities and reconnects
+          # insufficiently handled.
           '-fflags', '+genpts+discardcorrupt',
-          '-flags', '+global_header',
           '-analyzeduration', '10000000',
           '-probesize', '10000000',
-          
+          '-rw_timeout', '30000000', # 30 seconds in microseconds
+          '-reconnect', '1',
+          '-reconnect_at_eof', '1',
+          '-reconnect_streamed', '1',
+          '-reconnect_delay_max', '10',
+          *ffmpeg_request_headers(station),
+          '-i', station.stream_url,
+
+          '-flags', '+global_header',
+
           # Audio codec settings - PRIORITY: High quality for transcription
           # HLS broadcasters can emit non-monotonic audio timestamps. Rebase
           # them before encoding so libavcodec never receives backward PTS.
           '-af', 'aresample=async=1:first_pts=0',
           '-c:a', 'aac',
+          '-aac_coder', 'fast',
           '-b:a', '256k',           # High bitrate for better audio quality (was 128k)
           '-ar', '48000',           # Higher sample rate for better voice clarity (was 44100)
           '-ac', '2',               # Stereo audio (better for voice separation)
-          # Do not force AAC's two-loop search. FFmpeg's default fast coder is
-          # more resilient to live streams with discontinuities.
+          # `fast` is deliberately explicit: do not fall back to the older
+          # two-loop AAC search on malformed/discontinuous live inputs.
           
           # Video codec and quality settings (secondary priority)
           '-c:v', 'libx264',
@@ -133,13 +142,6 @@ namespace :stream do
           '-strftime', '1',
           '-g', '60',
           '-keyint_min', '60',
-          
-          # Timeout and reconnection settings
-          '-timeout', '30000000', # 30 seconds timeout in microseconds
-          '-reconnect', '1',
-          '-reconnect_at_eof', '1',
-          '-reconnect_streamed', '1',
-          '-reconnect_delay_max', '10',
           
           # MP4 optimization
           '-movflags', '+faststart',
@@ -312,6 +314,7 @@ namespace :stream do
                                           reason: termination_reason || (disconnection_detected ? 'FFmpeg disconnection' : nil),
                                           exit_code: exit_status.exitstatus,
                                           metadata: { ffmpeg_diagnostic: diagnostic,
+                                                      ffmpeg_signal: (exit_status.termsig if exit_status.signaled?),
                                                       ffmpeg_stderr_tail: diagnostic_lines.last(12) })
         end
 
