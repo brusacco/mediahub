@@ -41,14 +41,15 @@ namespace :stream do
       end
     end
 
-    # Set up signal handling for graceful shutdown
+    # Keep signal handling deliberately minimal. Active Record calls from a
+    # signal trap can deadlock while another thread owns a connection, which
+    # leaves systemd waiting until TimeoutStopSec expires.
     shutdown = false
+    ffmpeg_pid = nil
     %w[INT TERM HUP QUIT].each do |signal|
       Signal.trap(signal) do
-        puts "\n#{signal} signal received for station #{station.name} (ID: #{station.id})"
-        station.add_log_entry("Señal #{signal} recibida, cerrando proceso")
         shutdown = true
-        update_station_from_worker.call(stream_status: Station.stream_statuses[:disconnected], last_heartbeat_at: nil)
+        Process.kill('TERM', ffmpeg_pid) if ffmpeg_pid
         exit 0
       end
     end
@@ -169,6 +170,7 @@ namespace :stream do
         Open3.popen3(*command) do |stdin, _stdout, stderr, wait_thr|
           # Close stdin as we don't need to send input
           stdin.close
+          ffmpeg_pid = wait_thr.pid
 
           # Start heartbeat monitoring thread
           heartbeat_thread = Thread.new do
@@ -317,6 +319,11 @@ namespace :stream do
                 break
               end
             end
+          rescue IOError
+            # systemd can close the pipe while terminating the process group.
+            # A shutdown is already in progress; no diagnostic work is safe
+            # or useful from this background reader at that point.
+            raise unless shutdown
           end
 
           # Wait for FFmpeg process to finish
