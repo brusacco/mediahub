@@ -176,6 +176,14 @@ namespace :stream do
           # Close stdin as we don't need to send input
           stdin.close
           ffmpeg_pid = wait_thr.pid
+          # A stalled HLS input can ignore SIGTERM while its network read is
+          # blocked. For watchdog-confirmed bad captures, kill only this
+          # child so the outer listener can renew the manifest immediately.
+          terminate_stalled_ffmpeg = lambda do
+            Process.kill('KILL', wait_thr.pid) if wait_thr.alive?
+          rescue Errno::ESRCH
+            nil
+          end
 
           # Start heartbeat monitoring thread
           heartbeat_thread = Thread.new do
@@ -214,7 +222,7 @@ namespace :stream do
                   # Terminate the producer before writing operational state.
                   # A database call must never prevent recovery of a stalled
                   # capture if it is temporarily blocked.
-                  Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
+                  terminate_stalled_ffmpeg.call
                   disconnection_detected = true
                   termination_reason = warning_msg
                   Rails.logger.warn("No initial segment generated for station #{station.id} in 3 minutes")
@@ -255,7 +263,7 @@ namespace :stream do
                     update_station_from_worker.call(stream_status: Station.stream_statuses[:disconnected], last_heartbeat_at: nil)
                     disconnection_detected = true
                     termination_reason = warning_msg
-                    Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
+                    terminate_stalled_ffmpeg.call
                     break
                   end
                   next
@@ -288,7 +296,7 @@ namespace :stream do
                   # usable segments are produced. Stop it so the outer loop
                   # refreshes the manifest and reconnects instead of leaving
                   # a stale channel marked as connected.
-                  Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
+                  terminate_stalled_ffmpeg.call
                   break
                 end
               end
@@ -306,7 +314,7 @@ namespace :stream do
               stream_status: Station.stream_statuses[:disconnected],
               last_heartbeat_at: nil
             )
-            Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
+            terminate_stalled_ffmpeg.call
           end
 
           # Monitor stderr for errors in real-time
