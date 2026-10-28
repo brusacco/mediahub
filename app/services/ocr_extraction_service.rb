@@ -212,15 +212,15 @@ class OcrExtractionService < ApplicationService
       # PSM 7 = Treat the image as a single text line (alternative for zócalos)
       psm_mode = @options.fetch(:psm_mode, 6)
       
-      # Create OCR instance - RTesseract uses config hash for options
-      ocr = RTesseract.new(temp_file.path, lang: @language)
-      
-      # Configure Tesseract with optimized settings
-      # PSM mode and character whitelist for better accuracy
-      ocr.config = {
-        'tessedit_pageseg_mode' => psm_mode.to_s,
-        'tessedit_char_whitelist' => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ÁÉÍÓÚáéíóúÑñÜü.,;:!?\-()/ '
+      # RTesseract 3 exposes a read-only configuration. Pass Tesseract
+      # options to its constructor; they are converted to `-c key=value`.
+      # Assigning `ocr.config=` silently broke OCR with version 3.1.4.
+      ocr_options = {
+        lang: @language,
+        psm: psm_mode,
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ÁÉÍÓÚáéíóúÑñÜü.,;:!?\-()/ '
       }
+      ocr = RTesseract.new(temp_file.path, ocr_options)
       
       # Force Tesseract to actually run by accessing the text
       Rails.logger.info("OcrExtractionService: Calling Tesseract OCR (PSM mode: #{psm_mode})...")
@@ -229,11 +229,7 @@ class OcrExtractionService < ApplicationService
       # If no text found with PSM 6, try PSM 7 (single line mode)
       if text.empty? && psm_mode == 6
         Rails.logger.debug("OcrExtractionService: No text with PSM 6, trying PSM 7 (single line)...")
-        ocr_alt = RTesseract.new(temp_file.path, lang: @language)
-        ocr_alt.config = {
-          'tessedit_pageseg_mode' => '7',
-          'tessedit_char_whitelist' => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ÁÉÍÓÚáéíóúÑñÜü.,;:!?\-()/ '
-        }
+        ocr_alt = RTesseract.new(temp_file.path, ocr_options.merge(psm: 7))
         text_alt = ocr_alt.to_s.strip
         text = text_alt if text_alt.length > text.length
       end

@@ -183,7 +183,15 @@ namespace :stream do
               sleep 30 # Check every 30 seconds
               break if shutdown
 
-              segment_files = Dir.glob(base_directory.join('*.mp4').to_s).sort_by { |file| File.mtime(file) }
+              # Importing and cleanup run concurrently with the listener. A
+              # file can therefore disappear after Dir.glob returns it. Do
+              # not let that ordinary race kill this watchdog thread: without
+              # it, FFmpeg may remain alive forever on a stalled playlist.
+              segment_files = Dir.glob(base_directory.join('*.mp4').to_s).filter_map do |file|
+                [file, File.mtime(file)] if File.file?(file)
+              rescue Errno::ENOENT, IOError
+                nil
+              end.sort_by(&:last).map(&:first)
               # Files from a listener that ended earlier can remain in temp/.
               # They are not evidence that this FFmpeg process ever received
               # media, and must not suppress its initial-segment timeout.
@@ -222,7 +230,13 @@ namespace :stream do
               end
 
               if completed_file && File.exist?(completed_file)
-                file_time = File.mtime(completed_file)
+                begin
+                  file_time = File.mtime(completed_file)
+                rescue Errno::ENOENT, IOError
+                  # The importer won the race for this completed segment.
+                  # Re-evaluate the directory on the next heartbeat.
+                  next
+                end
 
                 ingestion_record = IngestionRecord.track_capture!(station, completed_file)
                 validation = StreamSegmentValidationService.call(completed_file, station: station)
@@ -279,6 +293,20 @@ namespace :stream do
                 end
               end
             end
+          rescue StandardError => error
+            # A watchdog failure must be visible and must trigger the normal
+            # reconnect path. Previously an exception here left FFmpeg alive
+            # with no remaining stale-stream protection.
+            warning_msg = "Error interno del monitor de segmentos: #{error.class}: #{error.message}"
+            Rails.logger.error("#{warning_msg} (station #{station.id})")
+            station.add_log_entry(warning_msg, level: :error)
+            disconnection_detected = true
+            termination_reason = warning_msg
+            update_station_from_worker.call(
+              stream_status: Station.stream_statuses[:disconnected],
+              last_heartbeat_at: nil
+            )
+            Process.kill('TERM', wait_thr.pid) if wait_thr.alive?
           end
 
           # Monitor stderr for errors in real-time
