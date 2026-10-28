@@ -58,48 +58,71 @@ task generate_transcription: :environment do
     end
 
     puts "Transcribing #{inputs.length} video(s) with #{model} in GPU batches of #{batch_size}"
-    command = [
-      whisper_binary,
-      *inputs.map { |input| input[:input_path].to_s },
-      '--model', model,
-      '--language', 'Spanish',
-      '--output_format', 'txt',
-      '--device', device,
-      '--compute_type', compute_type,
-      '--batched', 'True',
-      '--batch_size', batch_size.to_s,
-      '--output_dir', work_directory.to_s
-    ]
-
-    _stdout, stderr, status = Open3.capture3(*command)
+    whisper_command = lambda do |batch, batched:, worker_batch_size:|
+      [
+        whisper_binary,
+        *batch.map { |input| input[:input_path].to_s },
+        '--model', model,
+        '--language', 'Spanish',
+        '--output_format', 'txt',
+        '--device', device,
+        '--compute_type', compute_type,
+        '--batched', batched.to_s,
+        '--batch_size', worker_batch_size.to_s,
+        '--output_dir', work_directory.to_s
+      ]
+    end
+    transcription_for = lambda do |input|
+      output_files = [work_directory.join("#{input[:video].id}.txt"), work_directory.join("#{input[:video].id}.mp4.txt")]
+      output_file = output_files.find { |path| File.file?(path) }
+      output_file ? File.read(output_file).gsub(/\s+/, ' ').strip : nil
+    end
     successful = 0
     failed = 0
 
-    inputs.each do |input|
-      video = input[:video]
-      ingestion_record = input[:ingestion_record]
-      output_files = [work_directory.join("#{video.id}.txt"), work_directory.join("#{video.id}.mp4.txt")]
-      output_file = output_files.find { |path| File.exist?(path) }
-      transcription = output_file ? File.read(output_file).gsub(/\s+/, ' ').strip : nil
-      if status.success? && transcription.present?
-        video.update!(transcription: transcription)
-        ingestion_record.mark_transcribed!
-        successful += 1
-        puts "Transcription generated for #{video.location}"
-      else
-        error = if status.success? && transcription.blank?
-                  "Whisper batch produced an empty transcription (outputs: #{Dir.glob(work_directory.join('*').to_s).map { |path| File.basename(path) }.join(', ')})"
-                else
-                  "Whisper batch failed or did not produce output: #{stderr.to_s.strip}"
-                end
-        ingestion_record.fail!(error)
+    # Keep a malformed media file from poisoning every pending clip. The
+    # worker still performs GPU inference in batches of eight, but a failed
+    # batch is isolated to one-clip retries so only the actual bad input is
+    # held for review.
+    inputs.each_slice(batch_size) do |batch|
+      _stdout, stderr, status = Open3.capture3(*whisper_command.call(batch, batched: true, worker_batch_size: batch_size))
+
+      batch.each do |input|
+        video = input[:video]
+        ingestion_record = input[:ingestion_record]
+        transcription = status.success? ? transcription_for.call(input) : nil
+
+        if transcription.present?
+          video.update!(transcription: transcription)
+          ingestion_record.mark_transcribed!
+          successful += 1
+          puts "Transcription generated for #{video.location}"
+          next
+        end
+
+        # Retry each missing result separately. This also yields an actionable
+        # error instead of the same opaque batch-level error on every record.
+        _single_stdout, single_stderr, single_status = Open3.capture3(
+          *whisper_command.call([input], batched: false, worker_batch_size: 1)
+        )
+        transcription = transcription_for.call(input) if single_status.success?
+        if transcription.present?
+          video.update!(transcription: transcription)
+          ingestion_record.mark_transcribed!
+          successful += 1
+          puts "Transcription generated after isolated retry for #{video.location}"
+        else
+          diagnostic = (single_status.success? ? stderr : single_stderr).to_s.strip.last(2_000)
+          error = "Whisper produced no transcription after isolated retry: #{diagnostic.presence || 'no output file'}"
+          ingestion_record.fail!(error)
+          failed += 1
+          puts "Failed to generate transcription for #{video.location}"
+        end
+      rescue StandardError => e
+        ingestion_record.fail!("Transcription exception: #{e.message}")
         failed += 1
-        puts "Failed to generate transcription for #{video.location}"
+        puts "Error processing video #{video.location}: #{e.message}"
       end
-    rescue StandardError => e
-      ingestion_record.fail!("Transcription exception: #{e.message}")
-      failed += 1
-      puts "Error processing video #{video.location}: #{e.message}"
     end
 
     puts "Batch transcription completed. Successful: #{successful}, Failed: #{failed}"
