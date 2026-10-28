@@ -8,9 +8,9 @@ resource: bin/mediahub-host-monitor
 
 # Host monitoring
 
-`mediahub-host-monitor.timer` records a compact health snapshot every minute in `/var/log/mediahub/host-monitor.log` and the system journal. It records boot ID, load average, available RAM, root and media-disk utilization, Rails state, running listener count, failed systemd units, new core dumps, and NVIDIA GPU utilization/memory/temperature when available.
+`mediahub-host-monitor.timer` records a compact health snapshot every minute in `/var/log/mediahub/host-monitor.log` and the system journal. It records boot ID, load average, available RAM, root and media-disk utilization, Rails service state plus a local `/up` probe, running listener count, processing/tags/statistics timer state, failed systemd units, new core dumps, and NVIDIA GPU utilization/memory/temperature when available.
 
-The monitor writes a journal warning for low available memory (under 8 GB), root or media storage above 85%, inactive Rails, failed units, new core dumps, GPU temperature at or above 85°C, or GPU memory at or above 90%.
+The monitor writes a journal warning for low available memory (under 8 GB), root or media storage above 85%, an inactive or unhealthy Rails endpoint, inactive processing timers, failed units, new core dumps, GPU temperature at or above 85°C, or GPU memory at or above 90%.
 
 Inspect it with:
 

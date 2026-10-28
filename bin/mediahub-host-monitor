@@ -22,6 +22,16 @@ opt_usage=$(df -P /opt | awk 'NR == 2 { gsub(/%/, "", $5); print $5 }')
 failed_units=$(systemctl --failed --no-legend 2>/dev/null | awk 'NF { count += 1 } END { print count + 0 }')
 listeners=$(systemctl list-units 'mediahub-listener@*.service' --state=running --no-legend 2>/dev/null | awk 'NF { count += 1 } END { print count + 0 }')
 rails_state=$(systemctl is-active mediahub-web.service 2>/dev/null || true)
+processing_timer_state=$(systemctl is-active mediahub-processing.timer 2>/dev/null || true)
+tagging_timer_state=$(systemctl is-active mediahub-tagging.timer 2>/dev/null || true)
+topic_stats_timer_state=$(systemctl is-active mediahub-topic-stats.timer 2>/dev/null || true)
+
+# `active` only proves that Puma has a process. Probe Rails locally without
+# relying on DNS or the LAN-facing address so a wedged web worker is visible.
+web_health=unavailable
+if command -v curl >/dev/null 2>&1; then
+  web_health=$(timeout 10 curl --silent --show-error --fail --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3000/up 2>/dev/null || printf failed)
+fi
 
 gpu=unavailable
 gpu_temperature=0
@@ -41,7 +51,7 @@ fi
 # Count recent process crashes without keeping a long-running process around.
 recent_cores=$(timeout 10 coredumpctl --no-pager --no-legend list --since '2 minutes ago' 2>/dev/null | awk 'NF { count += 1 } END { print count + 0 }')
 
-snapshot="ts=$now boot_id=$boot_id load=$load_1,$load_5,$load_15 mem_available_mb=$mem_available_mb root_used_pct=$root_usage opt_used_pct=$opt_usage rails=$rails_state listeners=$listeners failed_units=$failed_units recent_cores=$recent_cores gpu=\"$gpu\""
+snapshot="ts=$now boot_id=$boot_id load=$load_1,$load_5,$load_15 mem_available_mb=$mem_available_mb root_used_pct=$root_usage opt_used_pct=$opt_usage rails=$rails_state web_health=$web_health listeners=$listeners processing_timer=$processing_timer_state tagging_timer=$tagging_timer_state topic_stats_timer=$topic_stats_timer_state failed_units=$failed_units recent_cores=$recent_cores gpu=\"$gpu\""
 printf '%s\n' "$snapshot" >> "$LOG_FILE"
 logger -t "$TAG" -- "$snapshot"
 
@@ -50,6 +60,10 @@ if (( mem_available_mb < 8192 )); then warnings+=("low_memory"); fi
 if (( root_usage >= 85 )); then warnings+=("root_disk_high"); fi
 if (( opt_usage >= 85 )); then warnings+=("media_disk_high"); fi
 if [[ "$rails_state" != "active" ]]; then warnings+=("rails_not_active"); fi
+if [[ "$web_health" != "200" ]]; then warnings+=("web_health=$web_health"); fi
+if [[ "$processing_timer_state" != "active" ]]; then warnings+=("processing_timer=$processing_timer_state"); fi
+if [[ "$tagging_timer_state" != "active" ]]; then warnings+=("tagging_timer=$tagging_timer_state"); fi
+if [[ "$topic_stats_timer_state" != "active" ]]; then warnings+=("topic_stats_timer=$topic_stats_timer_state"); fi
 if (( failed_units > 0 )); then warnings+=("failed_units=$failed_units"); fi
 if (( recent_cores > 0 )); then warnings+=("recent_cores=$recent_cores"); fi
 if [[ "$gpu_temperature" =~ ^[0-9]+$ ]] && (( gpu_temperature >= 85 )); then warnings+=("gpu_hot"); fi

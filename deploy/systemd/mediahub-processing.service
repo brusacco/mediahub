@@ -8,7 +8,10 @@ Type=oneshot
 User=artigas
 WorkingDirectory=/opt/mediahub
 Environment=RAILS_ENV=production
+Environment=DISABLE_BOOTSNAP=1
 Environment=TRANSCRIPTION_BATCH_SIZE=8
+Environment=FFMPEG_BIN=/opt/mediahub/vendor/ffmpeg/9.0.2/bin/ffmpeg
+Environment=FFPROBE_BIN=/opt/mediahub/vendor/ffmpeg/9.0.2/bin/ffprobe
 TimeoutStartSec=45min
 Nice=10
 IOSchedulingClass=best-effort

@@ -19,7 +19,9 @@ For HLS inputs, FFmpeg also limits consecutive playlist reloads with no new medi
 
 `CaptureSession` and `CaptureEvent` record every capture owner, source candidate/promotion/rejection, state transition, valid segment, FFmpeg exit and source rollback. Events store a URL fingerprint and resolver metadata rather than raw signed URLs. Application logs emit the same fields as JSON.
 
-For HLS audio with discontinuous timestamps, the FFmpeg command normalizes audio with `aresample=async=1:first_pts=0` before native AAC encoding. It does not force the slow `twoloop` AAC coder. On an FFmpeg exit, a bounded redacted stderr tail is stored with the session so the Admin station view can distinguish a source/network failure from an FFmpeg signal crash. See [FFmpeg SIGFPE](../operations/ffmpeg-sigfpe.md).
+For HLS audio with discontinuous timestamps, the FFmpeg command normalizes audio with `aresample=async=1:first_pts=0` before native AAC encoding. It does not force the slow `twoloop` AAC coder. On an FFmpeg exit, a bounded redacted stderr tail is stored with the session so the Admin station view can distinguish a source/network failure from an FFmpeg signal crash. A confirmed no-segment or stale-segment watchdog event terminates only the FFmpeg child with `SIGKILL`: some blocked HLS reads ignore `SIGTERM`; the outer listener then renews the manifest. See [FFmpeg SIGFPE](../operations/ffmpeg-sigfpe.md).
+
+Capture validation, import validation and source preflight use the configured `FFMPEG_BIN` / `FFPROBE_BIN` pair and an enforced timeout with a five-second kill grace. Production processing is pinned to the side-by-side FFmpeg 9 pair, so validation does not silently fall back to the older system FFmpeg.
 
 ## NPY expired-session protection
 

@@ -64,8 +64,7 @@ class StreamSegmentValidationService < ApplicationService
 
   def probe_duration
     stdout, _stderr, status = Open3.capture3(
-      'timeout', COMMAND_TIMEOUT_SECONDS.to_s,
-      'ffprobe', '-v', 'error', '-show_entries', 'format=duration',
+      *bounded_command(ffprobe_binary), '-v', 'error', '-show_entries', 'format=duration',
       '-of', 'default=noprint_wrappers=1:nokey=1', @path
     )
     return unless status.success?
@@ -78,8 +77,7 @@ class StreamSegmentValidationService < ApplicationService
 
   def probe_stream_types
     stdout, _stderr, status = Open3.capture3(
-      'timeout', COMMAND_TIMEOUT_SECONDS.to_s,
-      'ffprobe', '-v', 'error', '-show_entries', 'stream=codec_type',
+      *bounded_command(ffprobe_binary), '-v', 'error', '-show_entries', 'stream=codec_type',
       '-of', 'default=noprint_wrappers=1:nokey=1', @path
     )
     status.success? ? stdout.lines.map(&:strip).uniq : []
@@ -87,8 +85,7 @@ class StreamSegmentValidationService < ApplicationService
 
   def signal_metrics(offset)
     stdout, _stderr, status = Open3.capture3(
-      'timeout', COMMAND_TIMEOUT_SECONDS.to_s,
-      'ffmpeg', '-v', 'error', '-ss', offset.to_s, '-i', @path,
+      *bounded_command(ffmpeg_binary), '-v', 'error', '-ss', offset.to_s, '-i', @path,
       '-frames:v', '1', '-vf', 'scale=160:90,signalstats,metadata=print:file=-',
       '-f', 'null', '-'
     )
@@ -115,8 +112,7 @@ class StreamSegmentValidationService < ApplicationService
 
   def audio_silent?
     _stdout, stderr, status = Open3.capture3(
-      'timeout', COMMAND_TIMEOUT_SECONDS.to_s,
-      'ffmpeg', '-v', 'info', '-i', @path, '-t', '15', '-af', 'volumedetect', '-f', 'null', '-'
+      *bounded_command(ffmpeg_binary), '-v', 'info', '-i', @path, '-t', '15', '-af', 'volumedetect', '-f', 'null', '-'
     )
     return false unless status.success?
 
@@ -148,8 +144,7 @@ class StreamSegmentValidationService < ApplicationService
 
   def frozen_video?
     _stdout, stderr, status = Open3.capture3(
-      'timeout', COMMAND_TIMEOUT_SECONDS.to_s,
-      'ffmpeg', '-v', 'info', '-i', @path, '-t', '20',
+      *bounded_command(ffmpeg_binary), '-v', 'info', '-i', @path, '-t', '20',
       '-vf', 'freezedetect=n=0.001:d=10', '-f', 'null', '-'
     )
     status.success? && stderr.include?('freeze_start:')
@@ -162,8 +157,7 @@ class StreamSegmentValidationService < ApplicationService
     Dir.mktmpdir('mediahub-validation') do |directory|
       frame = File.join(directory, 'lower-third.png')
       _stdout, _stderr, status = Open3.capture3(
-        'timeout', COMMAND_TIMEOUT_SECONDS.to_s,
-        'ffmpeg', '-v', 'error', '-ss', SAMPLE_OFFSET_SECONDS.to_s, '-i', @path,
+        *bounded_command(ffmpeg_binary), '-v', 'error', '-ss', SAMPLE_OFFSET_SECONDS.to_s, '-i', @path,
         '-frames:v', '1', '-vf', 'crop=iw:ih/3:0:2*ih/3', frame
       )
       return false unless status.success? && File.file?(frame)
@@ -175,5 +169,20 @@ class StreamSegmentValidationService < ApplicationService
   rescue StandardError => e
     Rails.logger.warn("OCR validation skipped for #{@path}: #{e.class}: #{e.message}")
     false
+  end
+
+  def bounded_command(binary)
+    ['timeout', '--kill-after=5s', "#{COMMAND_TIMEOUT_SECONDS}s", binary]
+  end
+
+  def ffmpeg_binary
+    ENV.fetch('FFMPEG_BIN', 'ffmpeg')
+  end
+
+  def ffprobe_binary
+    ENV.fetch('FFPROBE_BIN') do
+      candidate = File.join(File.dirname(ffmpeg_binary), 'ffprobe')
+      File.executable?(candidate) ? candidate : 'ffprobe'
+    end
   end
 end

@@ -123,8 +123,7 @@ class VideoImportService < ApplicationService
   def file_in_use?
     return false unless File.exist?(@file)
 
-    command = "lsof -w #{Shellwords.escape(@file)}"
-    stdout, _stderr, status = Open3.capture3(command)
+    stdout, _stderr, status = Open3.capture3('lsof', '-w', @file)
     
     status.success? && !stdout.empty?
   rescue StandardError
@@ -143,8 +142,10 @@ class VideoImportService < ApplicationService
   end
 
   def valid_video?
-    command = "ffprobe -v error -show_streams -select_streams v:0 #{Shellwords.escape(@file)}"
-    _stdout, _stderr, status = Open3.capture3(command)
+    _stdout, _stderr, status = Open3.capture3(
+      'timeout', '--kill-after=5s', '20s', ffprobe_binary,
+      '-v', 'error', '-show_streams', '-select_streams', 'v:0', @file
+    )
     status.success?
   rescue StandardError
     false
@@ -213,6 +214,14 @@ class VideoImportService < ApplicationService
   rescue StandardError => e
     Rails.logger.error("Error generating thumbnail: #{e.message}")
     false
+  end
+
+  def ffprobe_binary
+    ENV.fetch('FFPROBE_BIN') do
+      ffmpeg = ENV.fetch('FFMPEG_BIN', 'ffmpeg')
+      candidate = File.join(File.dirname(ffmpeg), 'ffprobe')
+      File.executable?(candidate) ? candidate : 'ffprobe'
+    end
   end
 end
 

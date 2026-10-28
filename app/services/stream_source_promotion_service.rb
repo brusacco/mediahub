@@ -54,7 +54,7 @@ class StreamSourcePromotionService < ApplicationService
   end
 
   def preflight_streams
-    command = ['timeout', PREFLIGHT_TIMEOUT_SECONDS.to_s, 'ffprobe', '-v', 'error',
+    command = ['timeout', '--kill-after=5s', "#{PREFLIGHT_TIMEOUT_SECONDS}s", ffprobe_binary, '-v', 'error',
                '-show_entries', 'stream=codec_type', '-of', 'default=noprint_wrappers=1:nokey=1']
     command += ['-referer', @headers['Referer']] if @headers['Referer'].present?
     command += ['-user_agent', @headers['User-Agent']] if @headers['User-Agent'].present?
@@ -80,5 +80,13 @@ class StreamSourcePromotionService < ApplicationService
     Time.at(epoch.to_i) if epoch.to_s.match?(/\A\d{9,}\z/)
   rescue URI::InvalidURIError
     nil
+  end
+
+  def ffprobe_binary
+    ENV.fetch('FFPROBE_BIN') do
+      ffmpeg = ENV.fetch('FFMPEG_BIN', 'ffmpeg')
+      candidate = File.join(File.dirname(ffmpeg), 'ffprobe')
+      File.executable?(candidate) ? candidate : 'ffprobe'
+    end
   end
 end

@@ -68,7 +68,9 @@ cd "$APP_ROOT"
 
 database_station_ids() {
   source /etc/profile.d/rvm.sh
-  RAILS_ENV=production bundle exec rails runner 'puts Station.active.order(:id).pluck(:id).join(",")' 2>/dev/null
+  # Bootsnap's native cache has previously crashed one-shot runners on this
+  # host. The control plane must remain usable even when cache state is bad.
+  DISABLE_BOOTSNAP=1 RAILS_ENV=production bundle exec rails runner 'puts Station.active.order(:id).pluck(:id).join(",")' 2>/dev/null
 }
 
 selected_station_ids() {
